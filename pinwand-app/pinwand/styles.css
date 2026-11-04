@@ -1,0 +1,137 @@
+/* pinwand · looks. retro is the base in app.css; each style below only changes tokens. */
+@font-face{font-family:"Kalam";font-weight:400;font-display:swap;src:url(vendor/fonts/kalam-latin-400-normal.woff2) format("woff2")}
+@font-face{font-family:"Kalam";font-weight:700;font-display:swap;src:url(vendor/fonts/kalam-latin-700-normal.woff2) format("woff2")}
+@font-face{font-family:"Figtree";font-weight:400;font-display:swap;src:url(vendor/fonts/figtree-latin-400-normal.woff2) format("woff2")}
+@font-face{font-family:"Figtree";font-weight:600;font-display:swap;src:url(vendor/fonts/figtree-latin-600-normal.woff2) format("woff2")}
+@font-face{font-family:"Figtree";font-weight:700;font-display:swap;src:url(vendor/fonts/figtree-latin-700-normal.woff2) format("woff2")}
+@font-face{font-family:"Caveat";font-weight:400;font-display:swap;src:url(vendor/fonts/caveat-latin-400-normal.woff2) format("woff2")}
+@font-face{font-family:"Caveat";font-weight:700;font-display:swap;src:url(vendor/fonts/caveat-latin-700-normal.woff2) format("woff2")}
+
+/* ---------- studio: the look of the old course board ---------- */
+:root[data-style="studio"]{
+  --desk:#eef0ec; --dot:#c9cec4; --face:#ffffff; --face2:#f3f5f1; --hi:#d8dcd3; --lo:#c3c9bd; --dk:transparent;
+  --ink:#22261f; --ink2:#6b7266; --title:#2f6f5e; --title-ink:#ffffff; --field:#ffffff; --appbar:#ffffff; --appbar-ink:#22261f;
+  --paper:#ffffff; --paper-ink:#2a2a22; --paper-line:#d8dcd3; --shadow:rgba(0,0,0,.18); --note-ink:#2a2a22;
+  --sel:#2f6f5e; --hit:#d9468f; --due:#c0392b; --good:#2f6f5e; --link:#2f6f5e;
+  --n-yellow:#fde68a; --n-green:#bfe8c6; --n-blue:#bcdcf5; --n-pink:#fbc4d4; --n-grey:#e7e9e4; --n-white:#ffffff;
+  --b1:#2f6f5e; --b2:#c2553d; --b3:#3d6fb6; --b4:#b7832f; --b5:#7a5bb5; --b6:#2f8f9b; --b7:#6b7266;
+  --frame:rgba(47,111,94,.045); --frame-line:#b9c2b4;
+  --f:"Figtree",system-ui,sans-serif; --f-ui:"Figtree",system-ui,sans-serif; --f-text:"Figtree",system-ui,sans-serif; --f-head:"Figtree",system-ui,sans-serif;
+  --f-note:"Kalam","Comic Sans MS",cursive; --note-k:1.3;
+  --bw:1px; --r:7px; --rc:4px; --sh-btn:none; --root-bg:#2f6f5e;
+  --sh-card:0 1px 2px rgba(0,0,0,.12),0 8px 18px -8px rgba(0,0,0,.28); --sh-node:0 1px 2px rgba(0,0,0,.12),0 4px 10px -6px rgba(0,0,0,.25);
+  --pat:radial-gradient(var(--dot) 1.2px,transparent 1.3px); --pat-size:22px 22px;
+}
+:root[data-style="studio"][data-theme="dark"]{
+  --desk:#1b1e1a; --dot:#363b33; --face:#262a24; --face2:#20241f; --hi:#3a4036; --lo:#30352d;
+  --ink:#e7eae3; --ink2:#9aa194; --title:#7cc4ad; --title-ink:#10201b; --field:#1f231e; --appbar:#262a24; --appbar-ink:#e7eae3;
+  --paper:#262a24; --paper-ink:#e7eae3; --paper-line:#3a4036; --shadow:rgba(0,0,0,.5); --note-ink:#26261f;
+  --sel:#7cc4ad; --hit:#ff7ab8; --due:#ff8a7a; --good:#7cc4ad; --link:#7cc4ad; --root-bg:#3d7f6c;
+  --n-yellow:#e9d27a; --n-green:#a9d6b0; --n-blue:#a7c8e3; --n-pink:#e5b0c0; --n-grey:#c9ccc5; --n-white:#e7eae3;
+  --b1:#7cc4ad; --b2:#f08f78; --b3:#8fb5ef; --b4:#e3b56a; --b5:#b9a0f0; --b6:#6fcfd9; --b7:#b3b9ad;
+  --frame:rgba(124,196,173,.04); --frame-line:#4a5246; color-scheme:dark;
+}
+:root[data-style="studio"] .mi>button:hover,:root[data-style="studio"] .mi.open>button{border-color:transparent;background:var(--face2);border-radius:var(--r)}
+:root[data-style="studio"] .note,:root[data-style="chalk"] .note{padding:10px 14px}
+:root[data-style="studio"] .card .hd{background:var(--face2);border-bottom-color:var(--paper-line)}
+
+/* ---------- paper: a notebook on a desk ---------- */
+:root[data-style="paper"]{
+  --desk:#f4efe3; --dot:#dbe4ee; --face:#efe8d8; --face2:#e6dcc6; --hi:#fffaf0; --lo:#b9ab8c; --dk:rgba(80,60,20,.35);
+  --ink:#2b2a26; --ink2:#6a6455; --title:#1f3a68; --title-ink:#fffaf0; --field:#fffdf7; --appbar:#1f3a68;
+  --paper:#fffdf7; --paper-ink:#22201b; --paper-line:#cdbf9f; --shadow:rgba(80,60,20,.25); --note-ink:#22201b;
+  --sel:#1f3a68; --hit:#c2185b; --due:#a3352b; --good:#3c6e47; --link:#1f3a68;
+  --n-yellow:#fbf0b5; --n-green:#dcefd2; --n-blue:#d8e6f5; --n-pink:#f7dbe0; --n-grey:#ece6d8; --n-white:#fffdf7;
+  --b1:#1f3a68; --b2:#a3352b; --b3:#3c6e47; --b4:#8a6420; --b5:#5d3f7d; --b6:#2a6d78; --b7:#5b574d;
+  --frame:rgba(31,58,104,.035); --frame-line:#b8a98a;
+  --f:"Segoe UI",system-ui,sans-serif; --f-ui:"Segoe UI",system-ui,sans-serif; --f-text:"Georgia","Cambria","Palatino Linotype",serif; --f-head:"Georgia","Cambria",serif;
+  --f-note:"Caveat","Segoe Print",cursive; --note-k:1.45;
+  --bw:1px; --r:3px; --rc:2px; --sh-btn:none;
+  --sh-card:0 1px 0 rgba(0,0,0,.06),2px 4px 8px rgba(80,60,20,.16); --sh-node:1px 2px 4px rgba(80,60,20,.18);
+  --pat:repeating-linear-gradient(transparent 0 31px,var(--dot) 31px 32px); --pat-size:auto;
+}
+:root[data-style="paper"][data-theme="dark"]{
+  --desk:#1d2330; --dot:rgba(255,255,255,.05); --face:#2a3140; --face2:#232a37; --hi:#3b4458; --lo:#151a24;
+  --ink:#ece6d6; --ink2:#b3ab98; --title:#c9a25a; --title-ink:#1d2330; --field:#202735; --appbar:#2a3140; --appbar-ink:#ece6d6;
+  --paper:#262d3b; --paper-ink:#ece6d6; --paper-line:#3f4960; --shadow:rgba(0,0,0,.5); --note-ink:#ece6d6;
+  --sel:#c9a25a; --hit:#ff7aa8; --due:#ff8f80; --good:#9ccf9f; --link:#c9a25a;
+  --n-yellow:#4b4530; --n-green:#2f4636; --n-blue:#2c3d57; --n-pink:#4f3440; --n-grey:#363c4a; --n-white:#2b3242;
+  --b1:#c9a25a; --b2:#ff8f80; --b3:#9ccf9f; --b4:#e8c27a; --b5:#c3a7f0; --b6:#7fd0d9; --b7:#b3ab98;
+  --frame:rgba(255,255,255,.03); --frame-line:#4a5470; color-scheme:dark;
+}
+
+/* ---------- chalk: a blackboard ---------- */
+:root[data-style="chalk"]{
+  --desk:#2f4a3a; --dot:rgba(255,255,255,.035); --face:#3b5646; --face2:#304a3b; --hi:#5b7f69; --lo:#22362a; --dk:transparent;
+  --ink:#f1f0e8; --ink2:#c9cfc4; --title:#233a2d; --title-ink:#f1f0e8; --field:#2a4234; --appbar:#233a2d;
+  --paper:#34503f; --paper-ink:#f4f3ea; --paper-line:rgba(244,243,234,.55); --shadow:rgba(0,0,0,.25); --note-ink:#f6f4e8;
+  --sel:#f5e663; --hit:#ff9fb2; --due:#ffab9c; --good:#9fe3b4; --link:#f5e663;
+  --n-yellow:#56603f; --n-green:#3e6a4c; --n-blue:#3c5a6a; --n-pink:#6a4a55; --n-grey:#46594d; --n-white:#3d5848;
+  --b1:#f5e663; --b2:#ff9fb2; --b3:#9fe3b4; --b4:#9fd0ff; --b5:#ffc48a; --b6:#d0b3ff; --b7:#e8e8e0;
+  --frame:rgba(255,255,255,.03); --frame-line:rgba(244,243,234,.35);
+  --f:"Figtree",system-ui,sans-serif; --f-ui:"Figtree",system-ui,sans-serif; --f-text:"Kalam","Comic Sans MS",cursive; --f-head:"Caveat","Segoe Print",cursive;
+  --f-note:"Caveat","Segoe Print",cursive; --note-k:1.5; --root-bg:transparent; --root-ink:#f5e663;
+  --bw:1px; --r:3px; --rc:3px; --sh-btn:none; --sh-card:none; --sh-node:none;
+  --pat:radial-gradient(rgba(255,255,255,.04) 1px,transparent 1.2px),radial-gradient(rgba(0,0,0,.08) 1px,transparent 1.2px); --pat-size:5px 5px,7px 7px;
+  color-scheme:dark;
+}
+:root[data-style="chalk"] .note.h1{font-size:calc(42px * var(--ts))}
+:root[data-style="chalk"] .note.h2{font-size:calc(26px * var(--ts))}
+:root[data-style="chalk"] .node.root{border:2px solid #f5e663;font-size:calc(24px * var(--ts))}
+:root[data-style="chalk"] .card,:root[data-style="chalk"] .note:not(.c-none),:root[data-style="chalk"] .node{border-style:solid;border-color:rgba(244,243,234,.6)}
+
+/* ---------- blueprint: white lines on blue ---------- */
+:root[data-style="blueprint"]{
+  --desk:#1d4f91; --dot:rgba(255,255,255,.13); --face:#1a447d; --face2:#163b6c; --hi:#6f9ad6; --lo:#0f2c55; --dk:transparent;
+  --ink:#e8f1ff; --ink2:#b9d0f0; --title:#0f2c55; --title-ink:#e8f1ff; --field:#173f75; --appbar:#0f2c55;
+  --paper:#1f5398; --paper-ink:#f2f7ff; --paper-line:#cfe0ff; --shadow:rgba(0,0,0,.25); --note-ink:#f2f7ff;
+  --sel:#ffd66b; --hit:#ff9ad5; --due:#ffb0a0; --good:#8ff0d0; --link:#ffd66b;
+  --n-yellow:#2f5f8c; --n-green:#235f7e; --n-blue:#2a5aa8; --n-pink:#45528f; --n-grey:#24518a; --n-white:#1f5398;
+  --b1:#ffffff; --b2:#ffd66b; --b3:#8ff0d0; --b4:#ffa3a3; --b5:#b9d4ff; --b6:#f7b5ff; --b7:#d6e4f5;
+  --frame:rgba(255,255,255,.04); --frame-line:rgba(255,255,255,.55);
+  --f:"Consolas","Cascadia Mono","DejaVu Sans Mono",monospace; --f-ui:var(--f); --f-text:var(--f); --f-head:var(--f); --f-note:var(--f);
+  --bw:1px; --r:0px; --rc:0px; --sh-btn:none; --sh-card:none; --sh-node:none; --root-bg:#0f2c55;
+  --pat:linear-gradient(var(--dot) 1px,transparent 1px),linear-gradient(90deg,var(--dot) 1px,transparent 1px); --pat-size:24px 24px;
+  color-scheme:dark;
+}
+:root[data-style="blueprint"] .card,:root[data-style="blueprint"] .note:not(.c-none),:root[data-style="blueprint"] .node{border-color:var(--paper-line)}
+
+/* ---------- terminal: phosphor on black ---------- */
+:root[data-style="terminal"]{
+  --desk:#0b0d0a; --dot:rgba(125,255,155,.035); --face:#121611; --face2:#0e110d; --hi:#2f6f3a; --lo:#1c3a22; --dk:transparent;
+  --ink:#7dff9b; --ink2:#4fbf68; --title:#133d1d; --title-ink:#a8ffb9; --field:#0e120d; --appbar:#0b0d0a;
+  --paper:#0f140e; --paper-ink:#b8ffc6; --paper-line:#2f8f45; --shadow:rgba(0,0,0,.6); --note-ink:#c8ffd2;
+  --sel:#ffb347; --hit:#ff6b9a; --due:#ff7a6b; --good:#7dff9b; --link:#ffb347;
+  --n-yellow:#24230f; --n-green:#10261a; --n-blue:#0f2229; --n-pink:#2a1420; --n-grey:#161b15; --n-white:#121a12;
+  --b1:#7dff9b; --b2:#ffb347; --b3:#5ad1ff; --b4:#ff6b9a; --b5:#e6ff6b; --b6:#c79bff; --b7:#9aa79a;
+  --frame:rgba(125,255,155,.025); --frame-line:#2f6f3a;
+  --f:"Consolas","Cascadia Mono","DejaVu Sans Mono",monospace; --f-ui:var(--f); --f-text:var(--f); --f-head:var(--f); --f-note:var(--f);
+  --bw:1px; --r:0px; --rc:0px; --sh-btn:none; --sh-card:0 0 0 1px rgba(125,255,155,.08),0 0 14px rgba(125,255,155,.06); --sh-node:none; --root-bg:#133d1d;
+  --pat:repeating-linear-gradient(var(--dot) 0 1px,transparent 1px 3px); --pat-size:auto;
+  color-scheme:dark;
+}
+:root[data-style="terminal"] .txt,:root[data-style="terminal"] .katex{text-shadow:0 0 6px rgba(125,255,155,.28)}
+
+/* ---------- contrast: maximum legibility ---------- */
+:root[data-style="contrast"]{
+  --desk:#ffffff; --dot:transparent; --face:#ffffff; --face2:#e8e8e8; --hi:#000; --lo:#000; --dk:#000;
+  --ink:#000; --ink2:#000; --title:#000; --title-ink:#fff; --field:#fff; --paper:#fff; --paper-ink:#000; --paper-line:#000; --shadow:#000; --note-ink:#000;
+  --sel:#0050ff; --hit:#d4007a; --due:#b00000; --good:#006b00; --link:#000;
+  --n-yellow:#ffef5c; --n-green:#a6f5a6; --n-blue:#a6d4ff; --n-pink:#ffb8d6; --n-grey:#dddddd; --n-white:#ffffff;
+  --b1:#0000c8; --b2:#c80000; --b3:#007a00; --b4:#8a4b00; --b5:#7a00a8; --b6:#006f78; --b7:#000;
+  --frame:transparent; --frame-line:#000;
+  --f:"Segoe UI",system-ui,sans-serif; --f-ui:var(--f); --f-text:var(--f); --f-head:var(--f); --f-note:var(--f);
+  --bw:2px; --r:0px; --rc:0px; --sh-btn:none; --sh-card:4px 4px 0 #000; --sh-node:3px 3px 0 #000; --ts-k:1.12;
+  --pat:none; --pat-size:auto;
+}
+:root[data-style="contrast"][data-theme="dark"]{
+  --desk:#000; --face:#000; --face2:#222; --hi:#fff; --lo:#fff; --dk:#fff;
+  --ink:#fff; --ink2:#fff; --title:#fff; --title-ink:#000; --field:#000; --paper:#000; --paper-ink:#fff; --paper-line:#fff; --shadow:#fff; --note-ink:#fff;
+  --sel:#ffe600; --hit:#ff4fd8; --due:#ff6b6b; --good:#6bff8a; --link:#fff;
+  --n-yellow:#4d4300; --n-green:#004d16; --n-blue:#00305c; --n-pink:#5c0030; --n-grey:#333; --n-white:#000;
+  --b1:#ffe600; --b2:#ff6b6b; --b3:#6bff8a; --b4:#6bc8ff; --b5:#ff9ff3; --b6:#ffb36b; --b7:#fff;
+  --frame-line:#fff; --sh-card:4px 4px 0 #fff; --sh-node:3px 3px 0 #fff; color-scheme:dark;
+}
+:root[data-style="contrast"] .card,:root[data-style="contrast"] .note:not(.c-none),:root[data-style="contrast"] .node,:root[data-style="contrast"] .image{border-width:2px}
+:root[data-style="contrast"] #edges .tree{stroke-width:3.5}
+:root:not([data-style="retro"]) button.b[aria-pressed="true"]{background:var(--sel);color:var(--field);border-color:var(--sel)}

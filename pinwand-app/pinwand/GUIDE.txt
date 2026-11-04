@@ -1,0 +1,59 @@
+PINWAND — install and update
+============================
+
+INSTALL (once, about 5 minutes)
+
+1. Unzip pinwand-app.zip. You get a folder "pinwand".
+2. Open github.com, go to your repository "softwall".
+3. Click "Add file" > "Upload files".
+4. Drag the whole "pinwand" FOLDER (not its contents) into the
+   upload area. Click "Commit changes".
+5. Wait 1-2 minutes. Then open in Edge:
+      https://li3van1.github.io/softwall/pinwand/
+6. Edge address bar: click the "App available" icon (or
+   ... > Apps > Install this site as an app). Name: pinwand.
+7. First start: click "choose folder…" and pick (or create) a
+   folder on your PC, e.g. Documents\pinwand. Your boards,
+   PDFs, pictures and backups live there, nowhere else.
+   When Edge asks for permission to edit files, allow it.
+   Later starts show the folder name: click "open".
+
+BRING YOUR OLD BOARD
+   In the old board, save it first (its own Save button).
+   Then in pinwand: File > Import old course board… and pick
+   that .html file. Cards, palace copies, arrows, figures,
+   pictures and review progress come along. Reading columns
+   are left out; each old section becomes a frame.
+
+OPEN PDFs WITH PINWAND
+   Right-click a PDF > Open with > Choose another app > pinwand.
+   The PDF lands on the board you have open.
+
+SAVING
+   Autosave writes about a second after every change. Ctrl+S saves by
+   hand and also writes a backup (the last 40 are kept in
+   the folder "backups"). File > Restore a backup… goes back.
+   File > Autosave switches autosave off if you want only
+   manual saving.
+
+UPDATE (when you get a new version)
+1. In the repository open the folder "pinwand".
+2. "Add file" > "Upload files", drag in all files and folders
+   from the new "pinwand" folder (same names = replaced).
+   Commit.
+3. Open the app once with internet. It picks up the new
+   version after one restart (close and open it again).
+   Your boards are not touched: they are in your own folder.
+
+   If you change files yourself: in sw.js raise the number in
+   CACHE = "pinwand-v1" (v2, v3, …), otherwise the app keeps
+   the old files.
+
+KEYS
+   Help > Keys (F1). Everything is also in the menus and in
+   Ctrl+K (type a few letters of any command).
+
+CONTENT FROM ELSEWHERE
+   FORMAT.md describes the board format. Content made in that
+   format (JSON) can simply be pasted onto a board; .html files
+   can be dropped on it and run as sealed blocks.
