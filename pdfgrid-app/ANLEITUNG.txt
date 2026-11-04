@@ -1,0 +1,40 @@
+pdfgrid als installierte App ("Öffnen mit" für PDFs)
+=====================================================
+
+Was du brauchst: Chrome oder Edge auf Windows, macOS oder Linux.
+Firefox und Safari können sich nicht als PDF-Programm eintragen.
+
+1. Online stellen (einmalig, kostenlos, mit GitHub Pages)
+   a) Auf https://github.com ein Konto anlegen (falls noch keins).
+   b) Oben rechts "+" -> "New repository".
+      Name: pdfgrid · Public · "Create repository".
+   c) Auf der neuen Seite: "uploading an existing file" anklicken.
+      ALLE Dateien aus diesem Ordner hineinziehen (index.html, sw.js,
+      manifest.webmanifest, pdf.min.js, pdf.worker.min.js, die PNGs).
+      Unten "Commit changes".
+   d) "Settings" -> links "Pages" -> unter "Branch": "main" und "/ (root)"
+      wählen -> "Save".
+   e) Ein bis zwei Minuten warten. Die Adresse steht dann oben auf der
+      Pages-Seite, z. B. https://DEINNAME.github.io/pdfgrid/
+
+   Online liegt nur das Programm. Deine PDFs werden nie hochgeladen,
+   sie werden nur auf deinem Rechner gelesen.
+
+2. Installieren
+   a) Die Adresse in Chrome oder Edge öffnen.
+   b) In der Adresszeile rechts auf das Installieren-Symbol klicken
+      (Bildschirm mit Pfeil) oder Menü ⋮ -> "pdfgrid installieren".
+   c) pdfgrid hat jetzt ein eigenes Fenster, ein Icon und läuft offline.
+
+3. Als PDF-Programm benutzen
+   Windows: Rechtsklick auf eine PDF -> "Öffnen mit" -> "Andere App
+            auswählen" -> pdfgrid. Mit "Immer" wird es zum Standard.
+   macOS:   Rechtsklick auf eine PDF -> "Öffnen mit" -> pdfgrid.
+            Als Standard: Cmd+I auf eine PDF -> "Öffnen mit" -> pdfgrid
+            -> "Alle ändern".
+   Beim ersten Öffnen fragt das Programm, ob pdfgrid Dateien öffnen
+   darf: erlauben.
+
+Update später: neue Dateien in GitHub hochladen (ersetzen). Das
+installierte Programm holt sich die neue Fassung beim nächsten Start
+mit Internet; in sw.js dazu die Zeile CACHE="pdfgrid-v1" auf v2 erhöhen.
