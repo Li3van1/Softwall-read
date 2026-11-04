@@ -10,6 +10,16 @@ const idb = {
   async get(k) { const db = await this.open(); return new Promise((res, rej) => { const q = db.transaction("kv").objectStore("kv").get(k); q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error); }); },
   async set(k, v) { const db = await this.open(); return new Promise((res, rej) => { const t = db.transaction("kv", "readwrite"); t.objectStore("kv").put(v, k); t.oncomplete = () => res(); t.onerror = () => rej(t.error); }); },
 };
+
+// an in-memory workspace for trying things out where the browser allows no storage
+class MemFile { constructor(n) { this.kind = "file"; this.name = n; this.blob = new Blob([]); this.t = Date.now(); }
+  async getFile() { return new File([this.blob], this.name, { lastModified: this.t, type: this.blob.type }); }
+  async createWritable() { const me = this, parts = []; return { async write(d) { parts.push(d); }, async close() { me.blob = new Blob(parts); me.t = Date.now(); } }; } }
+class MemDir { constructor(n) { this.kind = "directory"; this.name = n; this.m = new Map(); }
+  async getDirectoryHandle(n, o = {}) { let d = this.m.get(n); if (!d) { if (!o.create) throw new DOMException("not found", "NotFoundError"); d = new MemDir(n); this.m.set(n, d); } return d; }
+  async getFileHandle(n, o = {}) { let f = this.m.get(n); if (!f) { if (!o.create) throw new DOMException("not found", "NotFoundError"); f = new MemFile(n); this.m.set(n, f); } return f; }
+  async removeEntry(n) { this.m.delete(n); }
+  async *entries() { for (const e of this.m) yield e; } }
 const store = PW.store = {
   root: null, kind: "none", name: "",
   canPick: "showDirectoryPicker" in window,
@@ -32,6 +42,7 @@ const store = PW.store = {
     this.set(hd, "folder"); await idb.set("root", { kind: "folder", handle: hd }).catch(() => { }); return true;
   },
   async useOPFS() { const r = await navigator.storage.getDirectory(); const d = await r.getDirectoryHandle("pinwand", { create: true }); this.set(d, "opfs"); await idb.set("root", { kind: "opfs" }).catch(() => { }); try { await navigator.storage.persist(); } catch (e) { } return true; },
+  useMemory() { this.set(new MemDir("try-out"), "opfs"); this.name = "try-out (not kept)"; return true; },
   async dir(name) { return this.root.getDirectoryHandle(name, { create: true }); },
   async writeFile(dirHandle, name, data) { const fh = await dirHandle.getFileHandle(name, { create: true }); const w = await fh.createWritable(); await w.write(data); await w.close(); },
   async readFile(dirHandle, name) { const fh = await dirHandle.getFileHandle(name); return fh.getFile(); },

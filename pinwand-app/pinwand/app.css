@@ -9,7 +9,7 @@
   --frame:rgba(255,255,255,.18); --frame-line:rgba(0,0,0,.55);
   --f:"Lucida Console","Monaco","DejaVu Sans Mono","Consolas","Courier New",monospace;
   --f-text:"Verdana","DejaVu Sans","Tahoma",sans-serif;
-  --f-note:var(--f-text); --f-head:var(--f); --f-ui:var(--f);
+  --f-note:"Kalam","Comic Sans MS",var(--f-text); --note-k:1.25; --f-head:var(--f); --f-ui:var(--f);
   --ts:1; --bw:2px; --r:0px; --rc:0px; --sh-card:3px 3px 0 var(--shadow); --sh-node:2px 2px 0 var(--shadow); --sh-pop:3px 3px 0 var(--shadow);
   --pat:radial-gradient(var(--dot) 1px,transparent 1px); --pat-size:6px 6px; --edge-w:1;
   color-scheme:light;
@@ -326,3 +326,46 @@ body.tools-left #viewport{margin-left:0}
 .ctxpop{position:fixed;z-index:46;display:grid;gap:2px;padding:4px}
 .ctxpop .cb{width:30px;height:30px;font-size:15px}
 .bdot{display:block;width:14px;height:14px;border-radius:50%}
+/* sticky notes: paper squares that sit slightly crooked on the board */
+body.sticky .note:not(.c-none):not(.h1):not(.h2){border:0;border-radius:1px 1px 2px 2px;min-height:150px;padding:16px 16px 22px;transform:rotate(var(--rot,0deg));
+  font-size:calc(17px * var(--ts) * var(--note-k,1));line-height:1.35;color:#2a2a22;
+  background-image:linear-gradient(180deg,rgba(0,0,0,.07) 0,rgba(0,0,0,0) 18px),linear-gradient(0deg,rgba(0,0,0,.09) 0,rgba(0,0,0,0) 26px);
+  box-shadow:0 1px 1px rgba(0,0,0,.10),0 3px 6px -2px rgba(0,0,0,.18),0 14px 16px -12px rgba(0,0,0,.45)}
+body.sticky .note:not(.c-none):not(.h1):not(.h2)::after{content:"";position:absolute;right:0;bottom:0;width:26px;height:20px;background:linear-gradient(135deg,rgba(0,0,0,0) 45%,rgba(0,0,0,.10) 50%,rgba(255,255,255,.35) 56%,rgba(0,0,0,0) 70%);pointer-events:none}
+body.sticky .note.c-yellow{background-color:#fde98c}body.sticky .note.c-green{background-color:#bfeac6}body.sticky .note.c-blue{background-color:#bfdcf6}
+body.sticky .note.c-pink{background-color:#fcc5d6}body.sticky .note.c-grey{background-color:#e3e5df}body.sticky .note.c-white{background-color:#fdfcf6}
+body.sticky .note.sel:not(.c-none){transform:rotate(0deg)}
+body.sticky .anim .note{transition:left .22s ease-out,top .22s ease-out,transform .15s}
+:root[data-theme="dark"] body.sticky .note:not(.c-none):not(.h1):not(.h2){filter:brightness(.88) saturate(.9)}
+body.sticky .note .txt[contenteditable="true"]{background:transparent;box-shadow:none;outline:1px dashed rgba(0,0,0,.3);outline-offset:4px}
+
+/* the mouse shows what will happen */
+#viewport{cursor:grab}
+#viewport.panning,#viewport.panning *{cursor:grabbing!important}
+.obj{cursor:move}
+.obj .txt[contenteditable="true"]{cursor:text}
+.obj.editing{cursor:default}.note.editing,.node.editing{cursor:text}
+body.sticky .note:not(.c-none):not(.h1):not(.h2) .txt{min-height:112px}
+.frame,.matrix{cursor:grab}
+.frame .ft,.matrix .ft,.win>.wt{cursor:move}
+.win .pages,.win .textLayer{cursor:text}.win .pages{cursor:default}
+.fig canvas{cursor:crosshair}
+.fig .fctl,.embed iframe{cursor:auto}
+.obj button,.obj .chip,.obj .qt,.obj .badge,.marks i,body.cover .def .dd,.tbl td.cv:not(.peek),body.gaps .gap{cursor:pointer}
+.rz{cursor:nwse-resize!important}.ew{cursor:ew-resize!important}.tbl .cr{cursor:col-resize!important}
+body.moving,body.moving *{cursor:move!important}
+body.sizing,body.sizing *{cursor:nwse-resize!important}
+body.wsizing,body.wsizing *{cursor:ew-resize!important}
+body.linking #viewport,body.linking .obj,body.linking .obj *{cursor:crosshair!important}
+/* picked up while dragging */
+body.sticky .note.drag:not(.c-none){transform:rotate(0deg) scale(1.03)}
+.obj.drag{box-shadow:0 2px 4px rgba(0,0,0,.18),0 18px 30px -10px rgba(0,0,0,.45)!important;opacity:.96}
+.note.c-none:hover:not(.sel):not(.editing){outline:1px dashed var(--lo);outline-offset:3px}
+/* handles appear when they can be used */
+.obj .rz,.obj .ew{opacity:0;transition:opacity .12s}
+.obj:hover>.rz,.obj.sel>.rz,.obj:hover>.ew,.obj.sel>.ew{opacity:1}
+.obj>.ew::after{content:"";position:absolute;top:30%;bottom:30%;left:3px;width:2px;background:var(--sel);opacity:.6}
+.tbl .cr:hover{background:linear-gradient(var(--sel),var(--sel)) center/2px 100% no-repeat}
+@media (prefers-reduced-motion: reduce){.obj .rz,.obj .ew{transition:none}}
+.obj{-webkit-user-select:none;user-select:none}
+.obj .txt[contenteditable="true"],.obj .textLayer,.obj .textLayer *,.obj input,.obj textarea{-webkit-user-select:text;user-select:text}

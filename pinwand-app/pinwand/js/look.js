@@ -12,22 +12,23 @@ const STYLES = [
 const FIXED_DARK = new Set(["chalk", "blueprint", "terminal"]);
 const NOTE_FONTS = { auto: ["style", null, 1], hand: ["handwriting", '"Kalam","Comic Sans MS",cursive', 1.3], marker: ["marker", '"Caveat","Segoe Print",cursive', 1.45], sans: ["sans", '"Figtree","Segoe UI",system-ui,sans-serif', 1], serif: ["serif", '"Georgia","Cambria",serif', 1.05], mono: ["mono", '"Consolas","Cascadia Mono","DejaVu Sans Mono",monospace', .95] };
 const PATS = { auto: ["style"], dots: ["dots", "radial-gradient(var(--dot) 1.2px,transparent 1.3px)", "20px 20px"], fine: ["fine dots", "radial-gradient(var(--dot) 1px,transparent 1px)", "6px 6px"], grid: ["grid", "linear-gradient(var(--dot) 1px,transparent 1px),linear-gradient(90deg,var(--dot) 1px,transparent 1px)", "24px 24px"], ruled: ["ruled", "repeating-linear-gradient(transparent 0 31px,var(--dot) 31px 32px)", "auto"], plain: ["plain", "none", "auto"] };
-const LOOK_DEF = { style: "retro", theme: "auto", ts: 1, noteFont: "auto", pat: "auto", edges: "elbow", edgeW: 1, motion: true };
-const BOARD_KEYS = ["style", "noteFont", "pat", "edges", "edgeW"];
+const LOOK_DEF = { style: "retro", theme: "auto", ts: 1, notes: "sticky", noteFont: "auto", pat: "auto", edges: "elbow", edgeW: 1, motion: true };
+const BOARD_KEYS = ["style", "notes", "noteFont", "pat", "edges", "edgeW"];
 const LOOK = PW.look = Object.assign({}, LOOK_DEF);
 function globalLook() { let g = {}; try { g = JSON.parse(ls.get("look", "{}")); } catch (e) { } if (!g.theme) g.theme = ls.get("theme", "auto"); return Object.assign({}, LOOK_DEF, g); }
 function boardLook() { return B.doc && B.doc.settings && B.doc.settings.look || null; }
 LOOK.resolve = () => { const g = globalLook(), b = boardLook(); if (b) BOARD_KEYS.forEach(k => { if (b[k] != null) g[k] = b[k]; }); return g; };
 LOOK.apply = function (rerender = true) {
-  const L = LOOK.resolve(), r = document.documentElement, before = [r.dataset.style, r.style.cssText, LOOK.edges, LOOK.edgeW].join("|");
+  const L = LOOK.resolve(), r = document.documentElement, before = [r.dataset.style, r.style.cssText, LOOK.edges, LOOK.edgeW, document.body.classList.contains("sticky")].join("|");
   Object.assign(LOOK, L);
   r.dataset.style = L.style; r.dataset.theme = L.theme === "auto" ? (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light") : L.theme;
   r.dataset.motion = L.motion ? "on" : "off";
   r.style.setProperty("--ts", String(L.ts * (L.style === "contrast" ? 1.12 : 1)));
-  const nf = NOTE_FONTS[L.noteFont] || NOTE_FONTS.auto; if (nf[1]) { r.style.setProperty("--f-note", nf[1]); r.style.setProperty("--note-k", nf[2]); } else { r.style.removeProperty("--f-note"); r.style.removeProperty("--note-k"); }
+  document.body.classList.toggle("sticky", L.notes !== "flat");
+  const nf = L.noteFont === "auto" && L.notes !== "flat" && !["studio", "paper", "chalk"].includes(L.style) ? NOTE_FONTS.hand : (NOTE_FONTS[L.noteFont] || NOTE_FONTS.auto); if (nf[1]) { r.style.setProperty("--f-note", nf[1]); r.style.setProperty("--note-k", nf[2]); } else { r.style.removeProperty("--f-note"); r.style.removeProperty("--note-k"); }
   const pt = PATS[L.pat] || PATS.auto; if (pt[1]) { r.style.setProperty("--pat", pt[1]); r.style.setProperty("--pat-size", pt[2]); } else { r.style.removeProperty("--pat"); r.style.removeProperty("--pat-size"); }
   r.style.setProperty("--edge-w", String(L.edgeW));
-  const after = [r.dataset.style, r.style.cssText, LOOK.edges, LOOK.edgeW].join("|");
+  const after = [r.dataset.style, r.style.cssText, LOOK.edges, LOOK.edgeW, document.body.classList.contains("sticky")].join("|");
   if (rerender) { if (B.doc && after !== before) { B.renderAll(); PW.map.relayoutAll(false); setTimeout(() => B.renderEdges(), 120); } PW.figRedraw(); B.renderEdges(); PW.drawMini && PW.drawMini(); }
   // fonts load lazily; once a new one arrives the cards change size
   if (document.fonts && document.fonts.status !== "loaded") document.fonts.ready.then(() => { if (B.doc) { B.renderEdges(); PW.map.relayoutAll(false); } });
@@ -67,6 +68,7 @@ LOOK.dialog = function () {
     body.append(grid, h("div", { class: "opts" },
       h("span", { text: "light / dark" }), FIXED_DARK.has(L.style) ? h("span", { text: "always dark", style: { opacity: .7 } }) : seg("theme", [["auto", "auto"], ["light", "light"], ["dark", "dark"]], false),
       h("span", { text: "text size" }), h("div", { class: "seg", style: { alignItems: "center", gap: "8px" } }, ts, tsv),
+      h("span", { text: "notes" }), seg("notes", [["sticky", "sticky notes"], ["flat", "flat cards"]], true),
       h("span", { text: "note font" }), sel("noteFont", NOTE_FONTS, true),
       h("span", { text: "background" }), sel("pat", PATS, true),
       h("span", { text: "map branches" }), h("div", { class: "seg" }, seg("edges", [["elbow", "elbow"], ["curved", "curved"], ["straight", "straight"]], true), h("span", { style: { width: "10px" } }), seg("edgeW", [[.7, "thin"], [1, "normal"], [1.6, "thick"]], true)),

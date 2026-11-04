@@ -39,12 +39,12 @@ cmd({ id: "bg", menu: "Edit", label: "Picture as background", enabled: () => B.s
 cmd({ id: "front", menu: "Edit", label: "Bring to front", enabled: () => B.sel.size > 0, run: () => { B.toFront([...B.sel]); B.commit(); } });
 function setStyle(s) { B.selected().forEach(o => { if (o.type === "note") { o.style = s; if (s) o.color = "none"; B.render(o); } }); B.commit(); }
 // insert
-cmd({ id: "new-note", menu: "Insert", label: "Note", key: "N", enabled: has, run: p => { p = at(p); B.add({ type: "note", x: Math.round(p.x), y: Math.round(p.y), w: 240, text: "", color: "yellow" }, { edit: "text" }); } });
+cmd({ id: "new-note", menu: "Insert", label: "Note", key: "N", enabled: has, run: p => { p = at(p); B.add({ type: "note", x: Math.round(p.x), y: Math.round(p.y), w: document.body.classList.contains("sticky") ? 200 : 240, text: "", color: ls.get("noteColor", "yellow") }, { edit: "text" }); } });
 cmd({ id: "new-def", menu: "Insert", label: "Definition", key: "D", enabled: has, run: p => { p = at(p); B.add({ type: "def", x: Math.round(p.x), y: Math.round(p.y), w: 380, term: "", def: "" }, { edit: "term" }); } });
 cmd({ id: "new-q", menu: "Insert", label: "Question", key: "Q", enabled: has, run: p => { p = at(p); B.add({ type: "q", x: Math.round(p.x), y: Math.round(p.y), w: 380, qt: "concept", q: "", a: "" }, { edit: "q" }); } });
 cmd({ id: "new-node", menu: "Insert", label: "Map: new centre", key: "M", enabled: has, run: p => PW.map.newRoot(at(p)) });
 cmd({ id: "new-frame", menu: "Insert", label: "Frame (around selection)", key: "F", enabled: has, run: () => newFrame() });
-cmd({ id: "link", menu: "Insert", label: "Arrow from selection…", key: "L", enabled: () => !!sel1(), run: () => { PW.linkMode = sel1().id; vp.style.cursor = "crosshair"; status("click the target"); }, sep: true });
+cmd({ id: "link", menu: "Insert", label: "Arrow from selection…", key: "L", enabled: () => !!sel1(), run: () => { PW.linkMode = sel1().id; vp.style.cursor = "crosshair"; document.body.classList.add("linking"); status("click the target"); }, sep: true });
 cmd({ id: "insert-file", menu: "Insert", label: "PDF or picture…", key: "I", enabled: has, run: () => $("fileIn").click(), sep: true });
 cmd({ id: "new-fig-flow", menu: "Insert", sub: "Live figure", label: "1D flow", enabled: has, run: () => PW.newFig("flow") });
 cmd({ id: "new-fig-map", menu: "Insert", sub: "Live figure", label: "1D map", enabled: has, run: () => PW.newFig("map") });
@@ -170,7 +170,7 @@ document.addEventListener("keydown", e => {
   if (e.altKey) return;
   const o = sel1();
   if (k === " ") { e.preventDefault(); if (o && PW.map.children(o.id).length) { PW.map.toggle(o); return; } PW.keys.space = true; vp.style.cursor = "grab"; return; }
-  if (k === "Escape") { if (openMenu) { hideMenus(); return; } if (PW.linkMode) { PW.linkMode = null; vp.style.cursor = ""; status(""); return; } if (PW.map.focusId) { PW.map.focus(null); return; } B.sel.clear(); B.selLink = null; B.updSel(); B.renderEdges(); PW.search.close(); return; }
+  if (k === "Escape") { if (openMenu) { hideMenus(); return; } if (PW.linkMode) { PW.linkMode = null; vp.style.cursor = ""; document.body.classList.remove("linking"); status(""); return; } if (PW.map.focusId) { PW.map.focus(null); return; } B.sel.clear(); B.selLink = null; B.updSel(); B.renderEdges(); PW.search.close(); return; }
   if (k === "Delete" || k === "Backspace") { e.preventDefault(); run("delete"); return; }
   if (k === "F2") { e.preventDefault(); run("edit"); return; }
   if (k === "F1") { e.preventDefault(); run("keys"); return; }
@@ -415,6 +415,7 @@ async function startBoards() {
   tabs = tabs.filter(t => have.has(t)); saveTabs(); drawTabs();
   if (tabs.length) return openBoard(tabs.includes(last) ? last : tabs[0]);
   if (last && have.has(last)) return openBoard(last);
+  if (window.PW_DEMO && !list.length) { await createBoard("Nonlinear Dynamics (demo)"); PW.pasteJSON(JSON.stringify(window.PW_DEMO), { x: 0, y: 0 }); if (window.PW_DEMO_HTML) await PW.addHTML(window.PW_DEMO_HTML, { x: 1500, y: 820 }, "Saddle-node explorer"); B.sel.clear(); B.updSel(); setTimeout(() => { PW.map.relayoutAll(false); B.fit(all(), 1, false); }, 400); await save(true); return; }
   showHome();
 }
 async function start() {
@@ -422,6 +423,7 @@ async function start() {
   buildMenus(); if (ls.get("invert", "0") === "1") document.body.classList.add("invertpdf");
   if (ls.get("minimap", "0") === "1") mini.hidden = false;
   if ("serviceWorker" in navigator && location.protocol !== "file:") navigator.serviceWorker.register("sw.js").catch(() => { });
+  if (window.PW_DEMO) { try { await PW.store.useOPFS(); } catch (e) { PW.store.useMemory(); } updSave(); return startBoards(); }
   const st = await PW.store.init();
   if (st === "reconnect") { const v = await dialog({ title: "workspace", body: h("pre", { text: PW.store._pending.name }), buttons: [{ label: "other folder…", value: "other" }, { label: "open", value: "ok", def: true }] });
     if (v === "ok" && await PW.store.reconnect()) { } else if (!(await workspaceDlg(false))) await PW.store.useOPFS(); }

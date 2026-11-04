@@ -158,7 +158,7 @@ B.selected = () => [...B.sel].map(obj).filter(Boolean);
 B.cur = () => B.sel.size === 1 ? obj([...B.sel][0]) : null;
 
 // ---------- editing text in place ----------
-B.edit = function (o, field) {
+B.edit = function (o, field, pt) {
   const e = elOf(o.id); if (!e) return; const T = B.types[o.type];
   field = field || (T && T.editField) || "text";
   const t = e.querySelector(`.txt[data-f="${field}"]`); if (!t) return;
@@ -167,8 +167,9 @@ B.edit = function (o, field) {
   const get = (T && T.get) ? T.get(o, field) : o[field];
   T && T.onEdit && T.onEdit(o, e, field);
   t._src = null; t.textContent = get || ""; t.contentEditable = "true"; t.focus();
-  const r = document.createRange(); r.selectNodeContents(t); r.collapse(false); const s = getSelection(); s.removeAllRanges(); s.addRange(r);
-  B.editing = { o, field, t, e, before: get || "" };
+  let r = null; if (pt) { try { if (document.caretRangeFromPoint) r = document.caretRangeFromPoint(pt.x, pt.y); else if (document.caretPositionFromPoint) { const cp = document.caretPositionFromPoint(pt.x, pt.y); if (cp) { r = document.createRange(); r.setStart(cp.offsetNode, cp.offset); } } } catch (e) { r = null; } if (r && !t.contains(r.startContainer)) r = null; }
+  if (!r) { r = document.createRange(); r.selectNodeContents(t); r.collapse(false); } const s = getSelection(); s.removeAllRanges(); s.addRange(r);
+  B.editing = { o, field, t, e, before: get || "", at: performance.now() };
   PW.map && PW.map.relayoutSoon(o);
 };
 B.endEdit = function (commit = true) {
@@ -206,21 +207,22 @@ vp.addEventListener("pointerdown", e => {
   if (B.editing && B.editing.t.contains(t)) return;
   // alt+click on another object: arrow from the selected object to this one
   if (e.altKey && B.sel.size === 1 && !B.sel.has(o.id)) { e.preventDefault(); B.addLink([...B.sel][0], o.id); B.select([o.id]); toast("arrow added"); return; }
-  if (PW.linkMode) { e.preventDefault(); const from = PW.linkMode; PW.linkMode = null; vp.style.cursor = ""; if (from !== o.id) { B.addLink(from, o.id); toast("arrow added"); } B.select([o.id]); return; }
+  if (PW.linkMode) { e.preventDefault(); const from = PW.linkMode; PW.linkMode = null; vp.style.cursor = ""; document.body.classList.remove("linking"); if (from !== o.id) { B.addLink(from, o.id); toast("arrow added"); } B.select([o.id]); return; }
   const rz = t.classList.contains("rz") ? "rz" : t.classList.contains("ew") ? "ew" : null;
   if (!rz && isUI(t)) { if (!B.sel.has(o.id)) B.select([o.id], e.shiftKey || e.ctrlKey); return; }
   if (!rz && isArea(o) && !t.closest(".ft,.mx-l,.txt") && !e.shiftKey) { // empty inside of a frame acts like the board
     drag = { mode: "pan", sx: e.clientX, sy: e.clientY, vx: B.view.x, vy: B.view.y, moved: false }; vp.setPointerCapture(e.pointerId); vp.classList.add("panning"); B.sel.clear(); B.updSel(); return;
   }
   if (!rz && (o.type === "pdf" || o.type === "fig" || o.type === "embed") && !t.closest(".wt")) { if (!B.sel.has(o.id)) B.select([o.id]); return; }
+  const wasOnly = B.sel.size === 1 && B.sel.has(o.id);
   if (e.shiftKey || e.ctrlKey) { if (B.sel.has(o.id)) { B.sel.delete(o.id); B.updSel(); return; } B.select([o.id], true); }
   else if (!B.sel.has(o.id)) B.select([o.id]);
   const p = B.toWorld(e.clientX, e.clientY);
-  if (rz) { drag = { mode: rz, o, p, w: o.w, h: o.h || B.size(o).h, ratio: (o.h || B.size(o).h) / o.w }; vp.setPointerCapture(e.pointerId); e.preventDefault(); return; }
+  if (rz) { document.body.classList.add(rz === "rz" ? "sizing" : "wsizing"); drag = { mode: rz, o, p, w: o.w, h: o.h || B.size(o).h, ratio: (o.h || B.size(o).h) / o.w }; vp.setPointerCapture(e.pointerId); e.preventDefault(); return; }
   // moving: the selection, everything inside selected frames, and whole branches of map nodes
   const move = new Set(B.sel);
   for (const id of B.sel) { const s = obj(id); if (isArea(s)) inside(s).forEach(c => move.add(c.id)); if (PW.map) PW.map.descendants(id).forEach(d => move.add(d)); }
-  drag = { mode: "move", p, start: [...move].map(id => { const m = obj(id); return [m, m.x, m.y]; }), moved: false, o, alt: e.altKey };
+  drag = { mode: "move", p, start: [...move].map(id => { const m = obj(id); return [m, m.x, m.y]; }), moved: false, o, alt: e.altKey, again: wasOnly && !e.shiftKey && !e.ctrlKey ? t.closest(".txt[data-f]") : null, cx: e.clientX, cy: e.clientY };
   vp.setPointerCapture(e.pointerId);
 });
 function inside(f) { return all().filter(o => o !== f && !isArea(o) && (() => { const b = B.box(o); return b.cx > f.x && b.cx < f.x + f.w && b.cy > f.y && b.cy < f.y + f.h; })()); }
@@ -239,26 +241,30 @@ vp.addEventListener("pointermove", e => {
   if (drag.mode === "ew") { const o = drag.o, T = B.types[o.type]; o.w = Math.round(Math.max((T && T.minW) || 60, drag.w + dx)); B.render(o); B.renderEdges(); PW.map && PW.map.relayoutSoon(o); return; }
   if (drag.mode === "move") {
     if (!drag.moved && Math.hypot(dx, dy) * B.view.z < 3) return;
-    if (!drag.moved) { drag.moved = true; B.toFront(drag.start.map(s => s[0].id).filter(id => !isArea(obj(id)))); }
+    if (!drag.moved) { drag.moved = true; try { getSelection().removeAllRanges(); } catch (x) { } drag.start.forEach(([m]) => { const el = elOf(m.id); el && el.classList.add("drag"); }); document.body.classList.add("moving"); B.toFront(drag.start.map(s => s[0].id).filter(id => !isArea(obj(id)))); }
     for (const [m, x, y] of drag.start) { m.x = Math.round(x + dx); m.y = Math.round(y + dy); const el = elOf(m.id); if (el) { el.style.left = m.x + "px"; el.style.top = m.y + "px"; } }
     B.renderEdges(); PW.map && PW.map.dragHover(drag, e);
   }
 });
 function endDrag(e) {
-  if (!drag) return; const d = drag; drag = null; vp.classList.remove("panning");
+  if (!drag) return; const d = drag; drag = null; vp.classList.remove("panning"); document.body.classList.remove("sizing", "wsizing");
   if (d.mode === "marquee") { d.m.remove(); B.updSel(); return; }
   if (d.mode === "pan") { if (d.moved) viewDirty(); return; }
-  if (d.mode === "move") { if (!d.moved) return; if (PW.map && PW.map.dropped(d, e)) return; B.commit(); PW.pdf && PW.pdf.onView(); return; }
+  if (d.mode === "move") { document.body.classList.remove("moving"); world.querySelectorAll(".obj.drag").forEach(x => x.classList.remove("drag")); if (!d.moved) { // a click on the text of an item that was already selected: write in it, like on paper
+      if (d.again && d.again.isConnected && !document.body.classList.contains("gaps") && !(d.again.closest(".covered,.cv:not(.peek)")) && !(document.body.classList.contains("cover") && d.again.closest(".def .dd"))) B.edit(d.o, d.again.dataset.f, { x: d.cx, y: d.cy });
+      return; } if (PW.map && PW.map.dropped(d, e)) return; B.commit(); PW.pdf && PW.pdf.onView(); return; }
   B.commit(); PW.map && PW.map.relayoutSoon(d.o); PW.pdf && PW.pdf.onView();
 }
 vp.addEventListener("pointerup", endDrag); vp.addEventListener("pointercancel", endDrag);
 vp.addEventListener("dblclick", e => {
-  const t = e.target, oe = t.closest(".obj"), o = oe && obj(oe.dataset.id);
+  // the pointer is captured while dragging, so look at what is really under it
+  const t = document.elementFromPoint(e.clientX, e.clientY) || e.target, oe = t.closest(".obj"), o = oe && obj(oe.dataset.id);
+  if (B.editing && B.editing.t.contains(t)) { if (performance.now() - (B.editing.at || 0) < 600) { e.preventDefault(); const sl = getSelection(); setTimeout(() => { let r = null; try { r = document.caretRangeFromPoint ? document.caretRangeFromPoint(e.clientX, e.clientY) : null; } catch (x) { } if (r && B.editing && B.editing.t.contains(r.startContainer)) { sl.removeAllRanges(); sl.addRange(r); } }, 0); } return; }
   const lt = t.closest("text[data-link]");
   if (lt) { const l = B.doc.links.find(x => x.id === lt.dataset.link); if (l) promptDlg("Arrow label", "", l.label || "").then(v => { if (v != null) { l.label = v.trim(); B.renderEdges(); B.commit(); } }); return; }
   if (!o) { const p = B.toWorld(e.clientX, e.clientY); run("new-note", p); return; }
   if (isUI(t) && !t.closest(".txt")) return;
-  const f = t.closest(".txt[data-f]"); B.select([o.id]); B.edit(o, f ? f.dataset.f : null);
+  const f = t.closest(".txt[data-f]"); B.select([o.id]); B.edit(o, f ? f.dataset.f : null, { x: e.clientX, y: e.clientY });
 });
 // wheel: mouse wheel zooms, touchpad scroll pans, pinch (ctrl) zooms
 vp.addEventListener("wheel", e => {
@@ -321,7 +327,8 @@ function boxesStr(o) { return "■".repeat(o.box || 0) + "□".repeat(5 - (o.box
 B.types.note = {
   editField: "text", minW: 60,
   create: o => h("div", { class: "note" }, h("div", { class: "txt", "data-f": "text", "data-ph": "…" }), h("div", { class: "srcline" }), h("div", { class: "ew" })),
-  update(o, e) { e.className = e.className.replace(/\bc-\S+|\bh[12]\b/g, "").trim(); e.classList.add("c-" + (o.color || "yellow")); if (o.style) e.classList.add(o.style); fieldsSet(o, e); chipFor(o, e); },
+  update(o, e) { e.className = e.className.replace(/\bc-\S+|\bh[12]\b/g, "").trim(); e.classList.add("c-" + (o.color || "yellow")); if (o.style) e.classList.add(o.style); fieldsSet(o, e); chipFor(o, e);
+    if (!e._rot) { let hsh = 0; for (const ch of String(o.id)) hsh = (hsh * 31 + ch.charCodeAt(0)) | 0; e._rot = 1; e.style.setProperty("--rot", (((hsh >>> 0) % 9) - 4) * .45 + "deg"); } },
   text: o => o.text || "",
 };
 B.types.def = {
