@@ -422,7 +422,11 @@ async function start() {
   PW.look.apply(false); setPin(ls.get("pintabs", "0") === "1"); drawTabs();
   buildMenus(); if (ls.get("invert", "0") === "1") document.body.classList.add("invertpdf");
   if (ls.get("minimap", "0") === "1") mini.hidden = false;
-  if ("serviceWorker" in navigator && location.protocol !== "file:") navigator.serviceWorker.register("sw.js").catch(() => { });
+  if ("serviceWorker" in navigator && location.protocol !== "file:") {
+    const had = !!navigator.serviceWorker.controller; let once = false;
+    navigator.serviceWorker.addEventListener("controllerchange", async () => { if (!had || once) return; once = true; if (B.dirty) await save(false); location.reload(); });
+    navigator.serviceWorker.register("sw.js", { updateViaCache: "none" }).then(r => r.update()).catch(() => { });
+  }
   if (window.PW_DEMO) { try { await PW.store.useOPFS(); } catch (e) { PW.store.useMemory(); } updSave(); return startBoards(); }
   const st = await PW.store.init();
   if (st === "reconnect") { const v = await dialog({ title: "workspace", body: h("pre", { text: PW.store._pending.name }), buttons: [{ label: "other folder…", value: "other" }, { label: "open", value: "ok", def: true }] });
