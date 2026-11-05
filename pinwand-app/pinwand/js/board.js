@@ -28,7 +28,7 @@ B.load = function (doc, file) {
   B.renderAll(); B.applyView(); PW.map && PW.map.relayoutAll(false);
 };
 B.snap = () => JSON.stringify({ o: B.doc.objects, l: B.doc.links });
-B.serialize = () => Object.assign({}, B.doc, { view: B.view, objects: B.doc.objects, links: B.doc.links, saved: Date.now() });
+B.serialize = () => Object.assign({}, B.doc, { app: Math.max(PW.APP, 0), view: B.view, objects: B.doc.objects, links: B.doc.links, saved: Date.now() });
 B.commit = function (why) {
   if (!B.doc) return; const s = B.snap(); if (B.hist[B.hist.length - 1] === s) return;
   B.hist.push(s); if (B.hist.length > 80) B.hist.shift(); B.redo = []; B.touch(why);
@@ -46,12 +46,15 @@ B.id = () => "o" + (B.nextId++);
 // ---------- objects ----------
 B.add = function (o, { select = true, edit = null, commit = true } = {}) {
   o.id = o.id || B.id(); normObj(o); o.created = o.created || Date.now(); B.doc.objects.push(o); B.objs.set(o.id, o); B.render(o);
-  if (select) B.select([o.id]); if (commit) B.commit(); if (edit) setTimeout(() => B.edit(o, edit), 0); return o;
+  const ne = elOf(o.id); if (ne) ne.style.zIndex = (isArea(o) || (o.type === "image" && o.bg)) ? 0 : 3 + B.doc.objects.length - 1; // a new item lies on top
+  if (select) B.select([o.id]); if (commit) B.commit();
+  if (edit) { B.edit(o, edit); setTimeout(() => { if (!B.editing && B.objs.get(o.id) === o && !o[edit === true ? "text" : edit]) B.edit(o, edit); }, 0); } return o;
 };
 B.remove = function (ids, { commit = true } = {}) {
   const set = new Set(ids); if (!set.size) return;
   // removing a map node also removes its branch
   if (PW.map) for (const id of [...set]) PW.map.descendants(id).forEach(d => set.add(d));
+  for (const o of B.doc.objects) if (o.on && set.has(o.on)) set.add(o.id);
   B.doc.objects = B.doc.objects.filter(o => !set.has(o.id)); set.forEach(id => { B.objs.delete(id); const e = elOf(id); e && e.remove(); B.sel.delete(id); });
   B.doc.links = B.doc.links.filter(l => !set.has(l.a) && !set.has(l.b));
   for (const o of B.doc.objects) if (set.has(o.parent)) delete o.parent;
@@ -93,15 +96,21 @@ function anchor(bx, tx, ty) { // point on the box border towards (tx,ty)
 B.renderEdges = function () {
   if (!B.doc) return; const parts = [];
   if (PW.map) parts.push(PW.map.edgesSVG());
+  B.linkMids = new Map(); const PEN = PW.draw ? PW.draw.PEN : {};
   for (const l of B.doc.links) {
     const a = obj(l.a), b = obj(l.b); if (!a || !b) continue; if (PW.map && (PW.map.isHidden(a) || PW.map.isHidden(b))) continue;
-    const A = B.box(a), Bx = B.box(b), [x1, y1] = anchor(A, Bx.cx, Bx.cy), [x2, y2] = anchor(Bx, A.cx, A.cy);
-    const dx = x2 - x1, dy = y2 - y1, len = Math.hypot(dx, dy) || 1, ux = dx / len, uy = dy / len, ax = x2 - ux * 10, ay = y2 - uy * 10;
-    const cls = "lnk" + (B.selLink === l.id ? " sel" : "");
-    parts.push(`<path class="${cls}" d="M${x1},${y1} L${x2},${y2}"${l.dash ? ' stroke-dasharray="6 5"' : ""}/>`,
-      `<path class="${cls}" style="fill:currentColor;stroke:none;color:var(${B.selLink === l.id ? "--hit" : "--link"})" d="M${x2},${y2} L${ax - uy * 5},${ay + ux * 5} L${ax + uy * 5},${ay - ux * 5}Z"/>`,
-      `<path class="lnkhit" data-link="${l.id}" d="M${x1},${y1} L${x2},${y2}"/>`);
-    if (l.label) parts.push(`<text x="${(x1 + x2) / 2}" y="${(y1 + y2) / 2 - 4}" text-anchor="middle" data-link="${l.id}" style="pointer-events:all;cursor:text">${escHTML(l.label)}</text>`);
+    const A = B.box(a), Bx = B.box(b), L0 = Math.hypot(Bx.cx - A.cx, Bx.cy - A.cy) || 1, bend = l.curve ? (l.curve < 0 ? -1 : 1) * Math.min(140, L0 * .22) : 0;
+    const qx = (A.cx + Bx.cx) / 2 - (Bx.cy - A.cy) / L0 * bend, qy = (A.cy + Bx.cy) / 2 + (Bx.cx - A.cx) / L0 * bend;
+    const [x1, y1] = anchor(A, bend ? qx : Bx.cx, bend ? qy : Bx.cy), [x2, y2] = anchor(Bx, bend ? qx : A.cx, bend ? qy : A.cy);
+    const cx = bend ? 2 * qx - (x1 + x2) / 2 : x1, cy = bend ? 2 * qy - (y1 + y2) / 2 : y1, mx = bend ? qx : (x1 + x2) / 2, my = bend ? qy : (y1 + y2) / 2; B.linkMids.set(l.id, { x: mx, y: my });
+    const on = B.selLink === l.id, w = l.w || 1, hs = 8 + w * 2.5, col = on ? "var(--hit)" : l.c && PEN[l.c] ? PEN[l.c] : "var(--link)", cls = "lnk" + (on ? " sel" : "");
+    const head = (px, py, fx, fy) => { const dx = px - fx, dy = py - fy, L = Math.hypot(dx, dy) || 1, ux = dx / L, uy = dy / L, ax = px - ux * hs, ay = py - uy * hs; return `M${px},${py} L${ax - uy * hs * .5},${ay + ux * hs * .5} L${ax + uy * hs * .5},${ay - ux * hs * .5}Z`; };
+    const d = bend ? `M${x1},${y1} Q${cx},${cy} ${x2},${y2}` : `M${x1},${y1} L${x2},${y2}`, st = (on ? "" : l.c && PEN[l.c] ? `stroke:${PEN[l.c]};` : "") + (w !== 1 && !on ? `stroke-width:calc(${1.6 * w}px * var(--edge-w,1));` : "");
+    parts.push(`<path class="${cls}" d="${d}"${l.dash ? ` stroke-dasharray="${6 * w} ${5 * w}"` : ""}${st ? ` style="${st}"` : ""}/>`);
+    if (l.head !== "none") parts.push(`<path class="${cls}" style="fill:${col};stroke:none" d="${head(x2, y2, bend ? cx : x1, bend ? cy : y1)}"/>`);
+    if (l.head === "both") parts.push(`<path class="${cls}" style="fill:${col};stroke:none" d="${head(x1, y1, bend ? cx : x2, bend ? cy : y2)}"/>`);
+    parts.push(`<path class="lnkhit" data-link="${l.id}" d="${d}"/>`);
+    if (l.label) parts.push(`<text x="${mx}" y="${my - 6}" text-anchor="middle" data-link="${l.id}" style="pointer-events:all;cursor:text">${escHTML(l.label)}</text>`);
   }
   svg.innerHTML = parts.join("");
 };
@@ -166,7 +175,7 @@ B.edit = function (o, field, pt) {
   e.classList.add("editing"); if (o.type === "q") e.classList.add("open");
   const get = (T && T.get) ? T.get(o, field) : o[field];
   T && T.onEdit && T.onEdit(o, e, field);
-  t._src = null; t.textContent = get || ""; t.contentEditable = "true"; t.focus();
+  t._src = null; t.textContent = get || ""; t.contentEditable = "plaintext-only"; if (t.contentEditable !== "plaintext-only") t.contentEditable = "true"; t.classList.add("ed"); t.focus();
   let r = null; if (pt) { try { if (document.caretRangeFromPoint) r = document.caretRangeFromPoint(pt.x, pt.y); else if (document.caretPositionFromPoint) { const cp = document.caretPositionFromPoint(pt.x, pt.y); if (cp) { r = document.createRange(); r.setStart(cp.offsetNode, cp.offset); } } } catch (e) { r = null; } if (r && !t.contains(r.startContainer)) r = null; }
   if (!r) { r = document.createRange(); r.selectNodeContents(t); r.collapse(false); } const s = getSelection(); s.removeAllRanges(); s.addRange(r);
   B.editing = { o, field, t, e, before: get || "", at: performance.now() };
@@ -174,7 +183,7 @@ B.edit = function (o, field, pt) {
 };
 B.endEdit = function (commit = true) {
   const ed = B.editing; if (!ed) return; B.editing = null;
-  ed.t.contentEditable = "false"; ed.e.classList.remove("editing");
+  ed.t.contentEditable = "false"; ed.t.classList.remove("ed"); ed.e.classList.remove("editing");
   const v = ed.t.innerText.replace(/\n$/, ""); setField(ed.o, ed.field, v); ed.t._src = null; B.render(ed.o);
   if (commit && v !== ed.before) B.commit();
   PW.map && PW.map.relayoutSoon(ed.o); B.renderEdges();
@@ -192,17 +201,20 @@ vp.addEventListener("pointerdown", e => {
   const t = e.target, oe = t.closest(".obj"), o = oe && obj(oe.dataset.id);
   if (B.editing && !(B.editing.t.contains(t))) B.endEdit();
   const linkHit = t.closest("[data-link]");
-  if (linkHit && !oe) { B.sel.clear(); B.selLink = linkHit.dataset.link; B.updSel(); B.renderEdges(); return; }
+  if (linkHit && !oe) { // a click selects the arrow, a second click on it writes its label
+    const id = linkHit.dataset.link, now = performance.now(), again = B.selLink === id && now - (B._linkT || 0) < 500; B._linkT = now;
+    if (again) { const l = B.doc.links.find(x => x.id === id); if (l && PW.draw) { e.preventDefault(); PW.draw.editLabel(l); } return; }
+    B.sel.clear(); B.selLink = id; B.updSel(); B.renderEdges(); return; }
   if (e.button === 1 || (!o && !e.shiftKey) || (o && e.button === 0 && PW.keys.space)) { // pan
     if (o && !PW.keys.space && e.button !== 1) return;
     drag = { mode: "pan", sx: e.clientX, sy: e.clientY, vx: B.view.x, vy: B.view.y, moved: false };
-    vp.setPointerCapture(e.pointerId); vp.classList.add("panning");
+    try { vp.setPointerCapture(e.pointerId); } catch (x) { } vp.classList.add("panning");
     if (!o && !e.shiftKey && !e.ctrlKey) { B.sel.clear(); if (B.selLink) { B.selLink = null; B.renderEdges(); } B.updSel(); }
     return;
   }
   if (!o) { // shift + drag on background: marquee
     const p = B.toWorld(e.clientX, e.clientY), m = h("div", { id: "marquee" }); world.append(m);
-    drag = { mode: "marquee", p, m, base: e.ctrlKey ? new Set(B.sel) : new Set() }; vp.setPointerCapture(e.pointerId); return;
+    drag = { mode: "marquee", p, m, base: e.ctrlKey ? new Set(B.sel) : new Set() }; try { vp.setPointerCapture(e.pointerId); } catch (x) { } return;
   }
   if (B.editing && B.editing.t.contains(t)) return;
   // alt+click on another object: arrow from the selected object to this one
@@ -211,19 +223,20 @@ vp.addEventListener("pointerdown", e => {
   const rz = t.classList.contains("rz") ? "rz" : t.classList.contains("ew") ? "ew" : null;
   if (!rz && isUI(t)) { if (!B.sel.has(o.id)) B.select([o.id], e.shiftKey || e.ctrlKey); return; }
   if (!rz && isArea(o) && !t.closest(".ft,.mx-l,.txt") && !e.shiftKey) { // empty inside of a frame acts like the board
-    drag = { mode: "pan", sx: e.clientX, sy: e.clientY, vx: B.view.x, vy: B.view.y, moved: false }; vp.setPointerCapture(e.pointerId); vp.classList.add("panning"); B.sel.clear(); B.updSel(); return;
+    drag = { mode: "pan", sx: e.clientX, sy: e.clientY, vx: B.view.x, vy: B.view.y, moved: false }; try { vp.setPointerCapture(e.pointerId); } catch (x) { } vp.classList.add("panning"); B.sel.clear(); B.updSel(); return;
   }
   if (!rz && (o.type === "pdf" || o.type === "fig" || o.type === "embed") && !t.closest(".wt")) { if (!B.sel.has(o.id)) B.select([o.id]); return; }
   const wasOnly = B.sel.size === 1 && B.sel.has(o.id);
   if (e.shiftKey || e.ctrlKey) { if (B.sel.has(o.id)) { B.sel.delete(o.id); B.updSel(); return; } B.select([o.id], true); }
   else if (!B.sel.has(o.id)) B.select([o.id]);
   const p = B.toWorld(e.clientX, e.clientY);
-  if (rz) { document.body.classList.add(rz === "rz" ? "sizing" : "wsizing"); drag = { mode: rz, o, p, w: o.w, h: o.h || B.size(o).h, ratio: (o.h || B.size(o).h) / o.w }; vp.setPointerCapture(e.pointerId); e.preventDefault(); return; }
+  if (rz) { document.body.classList.add(rz === "rz" ? "sizing" : "wsizing"); drag = { mode: rz, o, p, w: o.w, h: o.h || B.size(o).h, ratio: (o.h || B.size(o).h) / o.w }; try { vp.setPointerCapture(e.pointerId); } catch (x) { } e.preventDefault(); return; }
   // moving: the selection, everything inside selected frames, and whole branches of map nodes
   const move = new Set(B.sel);
   for (const id of B.sel) { const s = obj(id); if (isArea(s)) inside(s).forEach(c => move.add(c.id)); if (PW.map) PW.map.descendants(id).forEach(d => move.add(d)); }
+  for (const x of all()) if (x.on && move.has(x.on)) move.add(x.id);
   drag = { mode: "move", p, start: [...move].map(id => { const m = obj(id); return [m, m.x, m.y]; }), moved: false, o, alt: e.altKey, again: wasOnly && !e.shiftKey && !e.ctrlKey ? t.closest(".txt[data-f]") : null, cx: e.clientX, cy: e.clientY };
-  vp.setPointerCapture(e.pointerId);
+  try { vp.setPointerCapture(e.pointerId); } catch (x) { }
 });
 function inside(f) { return all().filter(o => o !== f && !isArea(o) && (() => { const b = B.box(o); return b.cx > f.x && b.cx < f.x + f.w && b.cy > f.y && b.cy < f.y + f.h; })()); }
 B.inside = inside;
@@ -237,7 +250,7 @@ vp.addEventListener("pointermove", e => {
     const ids = new Set(drag.base); for (const o of all()) { if (PW.map && PW.map.isHidden(o)) continue; const b = B.box(o); if (b.x >= x && b.y >= y && b.x + b.w <= x + w && b.y + b.h <= y + hh) ids.add(o.id); }
     B.sel = ids; B.updSel(); return;
   }
-  if (drag.mode === "rz") { const o = drag.o; o.w = Math.round(Math.max(40, drag.w + dx)); if (o.type === "image" && !e.shiftKey) o.h = Math.round(o.w * drag.ratio); else if (o.h != null || o.type === "frame") o.h = Math.round(Math.max(30, drag.h + dy)); B.render(o); B.renderEdges(); return; }
+  if (drag.mode === "rz") { const o = drag.o; o.w = Math.round(Math.max(40, drag.w + dx)); if ((o.type === "image" && !e.shiftKey) || o.type === "ink") o.h = Math.round(o.w * drag.ratio); else if (o.h != null || o.type === "frame") o.h = Math.round(Math.max(30, drag.h + dy)); B.render(o); B.renderEdges(); return; }
   if (drag.mode === "ew") { const o = drag.o, T = B.types[o.type]; o.w = Math.round(Math.max((T && T.minW) || 60, drag.w + dx)); B.render(o); B.renderEdges(); PW.map && PW.map.relayoutSoon(o); return; }
   if (drag.mode === "move") {
     if (!drag.moved && Math.hypot(dx, dy) * B.view.z < 3) return;
@@ -259,16 +272,22 @@ vp.addEventListener("pointerup", endDrag); vp.addEventListener("pointercancel", 
 vp.addEventListener("dblclick", e => {
   // the pointer is captured while dragging, so look at what is really under it
   const t = document.elementFromPoint(e.clientX, e.clientY) || e.target, oe = t.closest(".obj"), o = oe && obj(oe.dataset.id);
+  if (t.closest("#lbled")) return;
+  if (PW.draw && (PW.draw.tool !== "select" || performance.now() - (PW.draw.lastDraw || 0) < 800)) return; // quick taps while drawing are not a double-click
   if (B.editing && B.editing.t.contains(t)) { if (performance.now() - (B.editing.at || 0) < 600) { e.preventDefault(); const sl = getSelection(); setTimeout(() => { let r = null; try { r = document.caretRangeFromPoint ? document.caretRangeFromPoint(e.clientX, e.clientY) : null; } catch (x) { } if (r && B.editing && B.editing.t.contains(r.startContainer)) { sl.removeAllRanges(); sl.addRange(r); } }, 0); } return; }
-  const lt = t.closest("text[data-link]");
-  if (lt) { const l = B.doc.links.find(x => x.id === lt.dataset.link); if (l) promptDlg("Arrow label", "", l.label || "").then(v => { if (v != null) { l.label = v.trim(); B.renderEdges(); B.commit(); } }); return; }
-  if (!o) { const p = B.toWorld(e.clientX, e.clientY); run("new-note", p); return; }
+  const lt = t.closest("[data-link]");
+  if (lt && !oe) { const l = B.doc.links.find(x => x.id === lt.dataset.link); if (l) { B.selLink = l.id; B.renderEdges(); if (PW.draw) PW.draw.editLabel(l); else promptDlg("Arrow label", "", l.label || "").then(v => { if (v != null) { l.label = v.trim(); B.renderEdges(); B.commit(); } }); } return; }
+  if (!o || (isArea(o) && !t.closest(".ft,.mx-l,.txt"))) { // empty board, or the empty inside of a frame: a new note there — or the text of a box drawn around this spot
+    const p = B.toWorld(e.clientX, e.clientY), sh = PW.draw && PW.draw.shapeAt(p.x, p.y); if (sh) { B.select([sh.id]); B.edit(sh, "text"); return; }
+    run("new-note", p); return; }
   if (isUI(t) && !t.closest(".txt")) return;
   const f = t.closest(".txt[data-f]"); B.select([o.id]); B.edit(o, f ? f.dataset.f : null, { x: e.clientX, y: e.clientY });
 });
 // wheel: mouse wheel zooms, touchpad scroll pans, pinch (ctrl) zooms
 vp.addEventListener("wheel", e => {
-  if (e.target.closest(".panel,.fctl")) return; e.preventDefault();
+  if (e.target.closest(".panel,.fctl")) return;
+  if (!e.ctrlKey && e.target.closest(".obj.pdf.sel .pages")) return; // a selected PDF window scrolls its pages
+  e.preventDefault();
   const mode = ls.get("wheel", "auto"), mouse = e.deltaMode === 1 || (e.deltaX === 0 && Math.abs(e.deltaY) >= 50 && Number.isInteger(e.deltaY));
   if (e.ctrlKey || (mode === "zoom") || (mode === "auto" && mouse && !e.shiftKey)) B.zoomAt(Math.exp(-e.deltaY * (e.ctrlKey && !mouse ? 0.01 : 0.0015)), e.clientX, e.clientY);
   else { B.view.x -= e.shiftKey && !e.deltaX ? e.deltaY : e.deltaX; B.view.y -= e.shiftKey && !e.deltaX ? 0 : e.deltaY; B.applyView(); viewDirty(); }
@@ -279,6 +298,7 @@ let clip = null;
 B.copy = function (cut) {
   const sel = B.selected(); if (!sel.length) return; const ids = new Set(sel.map(o => o.id));
   if (PW.map) sel.forEach(o => PW.map.descendants(o.id).forEach(d => ids.add(d)));
+  for (const o of all()) if (o.on && ids.has(o.on)) ids.add(o.id);
   const objs = all().filter(o => ids.has(o.id)); clip = { objs: JSON.parse(JSON.stringify(objs)), links: B.doc.links.filter(l => ids.has(l.a) && ids.has(l.b)).map(l => ({ ...l })), text: objs.map(B.textOf).filter(Boolean).join("\n\n"), t: Date.now() };
   try { navigator.clipboard.writeText(clip.text || " ").catch(() => { }); } catch (e) { }
   if (cut) B.remove([...ids]); else toast(objs.length + " copied");
@@ -288,7 +308,7 @@ B.pasteObjs = function (src, dx = 30, dy = 30, asCopy = true) {
   for (const o of src.objs) { const n = JSON.parse(JSON.stringify(o)); map[o.id] = n.id = B.id(); n.x += dx; n.y += dy;
     if (asCopy && (n.type === "def" || n.type === "q")) { n.copy = true; n.of = o.copy ? o.of : o.id; }
     made.push(n); }
-  for (const n of made) { if (n.parent) n.parent = map[n.parent] || undefined; if (!n.parent) delete n.parent; B.doc.objects.push(n); B.objs.set(n.id, n); B.render(n); }
+  for (const n of made) { if (n.parent) n.parent = map[n.parent] || undefined; if (!n.parent) delete n.parent; if (n.on) n.on = map[n.on] || undefined; if (!n.on) delete n.on; B.doc.objects.push(n); B.objs.set(n.id, n); B.render(n); }
   for (const l of src.links) B.doc.links.push({ ...l, id: "l" + (B.nextId++), a: map[l.a], b: map[l.b] });
   B.zorder(); B.renderEdges(); B.select(made.filter(n => !n.parent || !map[Object.keys(map).find(k => map[k] === n.parent)]).map(n => n.id)); B.commit(); return made;
 };
@@ -319,7 +339,7 @@ function fieldsSet(o, e) { e.querySelectorAll(".txt[data-f]").forEach(t => { if 
 function chipFor(o, e) {
   let c = e.querySelector(":scope .refchip"); const host = e.querySelector(".srcline") || e;
   if (!o.ref) { if (c) c.remove(); return; }
-  const pdf = obj(o.ref.pdf), label = (pdf ? (pdf.name || "pdf").replace(/\.pdf$/i, "") : "pdf") + " p." + o.ref.page;
+  const pdf = obj(o.ref.pdf), label = (pdf ? (pdf.name || "pdf") : (o.ref.name || "pdf")).replace(/\.pdf$/i, "") + " p." + o.ref.page;
   if (!c) { c = h("span", { class: "chip refchip nodrag", title: "show in the PDF" }); c.addEventListener("click", ev => { ev.stopPropagation(); PW.pdf.goto(o.ref, o.refText); }); host.append(c); }
   if (c.textContent !== label) c.textContent = label;
 }

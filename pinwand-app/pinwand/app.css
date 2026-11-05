@@ -93,7 +93,7 @@ body.nochrome #titlebar,body.nochrome #menubar,body.nochrome #toolbar,body.nochr
 .rz{position:absolute;right:-5px;bottom:-5px;width:12px;height:12px;cursor:nwse-resize;z-index:5;background:linear-gradient(135deg,transparent 50%,var(--lo) 50%)}
 .ew{position:absolute;top:0;bottom:0;right:-4px;width:8px;cursor:ew-resize;z-index:5}
 .txt{white-space:pre-wrap;overflow-wrap:break-word;outline:none;min-height:1.3em}
-.txt[contenteditable="true"]{background:var(--field);box-shadow:inset 0 0 0 1px var(--ink);cursor:text}
+.txt.ed{background:var(--field);box-shadow:inset 0 0 0 1px var(--ink);cursor:text}
 .txt:empty::before{content:attr(data-ph);opacity:.45}
 .katex{font-size:1.06em}
 .chip{display:inline-block;font:11px var(--f);border:1px solid var(--paper-line);padding:0 4px;margin-top:4px;cursor:pointer;background:var(--n-grey);color:var(--paper-ink)}
@@ -327,23 +327,24 @@ body.tools-left #viewport{margin-left:0}
 .ctxpop .cb{width:30px;height:30px;font-size:15px}
 .bdot{display:block;width:14px;height:14px;border-radius:50%}
 /* sticky notes: paper squares that sit slightly crooked on the board */
-body.sticky .note:not(.c-none):not(.h1):not(.h2){border:0;border-radius:1px 1px 2px 2px;min-height:150px;padding:16px 16px 22px;transform:rotate(var(--rot,0deg));
+body.sticky .note:not(.c-none):not(.h1):not(.h2){border:0;border-radius:1px 1px 2px 2px;min-height:150px;padding:16px 16px 22px;
   font-size:calc(17px * var(--ts) * var(--note-k,1));line-height:1.35;color:#2a2a22;
   background-image:linear-gradient(180deg,rgba(0,0,0,.07) 0,rgba(0,0,0,0) 18px),linear-gradient(0deg,rgba(0,0,0,.09) 0,rgba(0,0,0,0) 26px);
   box-shadow:0 1px 1px rgba(0,0,0,.10),0 3px 6px -2px rgba(0,0,0,.18),0 14px 16px -12px rgba(0,0,0,.45)}
 body.sticky .note:not(.c-none):not(.h1):not(.h2)::after{content:"";position:absolute;right:0;bottom:0;width:26px;height:20px;background:linear-gradient(135deg,rgba(0,0,0,0) 45%,rgba(0,0,0,.10) 50%,rgba(255,255,255,.35) 56%,rgba(0,0,0,0) 70%);pointer-events:none}
 body.sticky .note.c-yellow{background-color:#fde98c}body.sticky .note.c-green{background-color:#bfeac6}body.sticky .note.c-blue{background-color:#bfdcf6}
 body.sticky .note.c-pink{background-color:#fcc5d6}body.sticky .note.c-grey{background-color:#e3e5df}body.sticky .note.c-white{background-color:#fdfcf6}
+body.sticky.tilt .note:not(.c-none):not(.h1):not(.h2){transform:rotate(var(--rot,0deg))}
 body.sticky .note.sel:not(.c-none){transform:rotate(0deg)}
 body.sticky .anim .note{transition:left .22s ease-out,top .22s ease-out,transform .15s}
 :root[data-theme="dark"] body.sticky .note:not(.c-none):not(.h1):not(.h2){filter:brightness(.88) saturate(.9)}
-body.sticky .note .txt[contenteditable="true"]{background:transparent;box-shadow:none;outline:1px dashed rgba(0,0,0,.3);outline-offset:4px}
+body.sticky .note .txt.ed{background:transparent;box-shadow:none;outline:1px dashed rgba(0,0,0,.3);outline-offset:4px}
 
 /* the mouse shows what will happen */
 #viewport{cursor:grab}
 #viewport.panning,#viewport.panning *{cursor:grabbing!important}
 .obj{cursor:move}
-.obj .txt[contenteditable="true"]{cursor:text}
+.obj .txt.ed{cursor:text}
 .obj.editing{cursor:default}.note.editing,.node.editing{cursor:text}
 body.sticky .note:not(.c-none):not(.h1):not(.h2) .txt{min-height:112px}
 .frame,.matrix{cursor:grab}
@@ -368,4 +369,224 @@ body.sticky .note.drag:not(.c-none){transform:rotate(0deg) scale(1.03)}
 .tbl .cr:hover{background:linear-gradient(var(--sel),var(--sel)) center/2px 100% no-repeat}
 @media (prefers-reduced-motion: reduce){.obj .rz,.obj .ew{transition:none}}
 .obj{-webkit-user-select:none;user-select:none}
-.obj .txt[contenteditable="true"],.obj .textLayer,.obj .textLayer *,.obj input,.obj textarea{-webkit-user-select:text;user-select:text}
+.obj .txt.ed,.obj .textLayer,.obj .textLayer *,.obj input,.obj textarea{-webkit-user-select:text;user-select:text}
+/* open menus float above everything */
+.mdrop{position:fixed;z-index:95;overflow-y:auto;box-shadow:3px 3px 0 var(--shadow)}
+:root:not([data-style="retro"]) .mdrop{box-shadow:0 10px 28px rgba(0,0,0,.28)}
+.mdrop .sb.on{background:var(--face2)}
+.mdrop>button:focus-visible{background:var(--title);color:var(--title-ink);outline:none}
+/* keep floating things clear of the bottom tool bar */
+body.tools-bottom #toast{bottom:88px}
+body.tools-bottom #walkbar,body.tools-bottom #presbar{bottom:84px}
+body.tools-bottom #minimap{bottom:84px}
+body.tools-left #searchPanel{right:10px}
+/* outline */
+#outline{left:8px;top:var(--vpTop,112px);width:min(280px,calc(100vw - 20px));max-height:calc(100vh - var(--vpTop,112px) - 34px)}
+body.tools-left #outline{left:58px}
+#olist{overflow:auto;margin:0 4px 4px;min-height:40px;padding:2px 0}
+#olist .or{display:flex;gap:8px;justify-content:space-between;align-items:baseline;padding:3px 8px;cursor:pointer;border-radius:var(--r)}
+#olist .or:hover{background:var(--face2)}
+#olist .or.on{background:var(--sel);color:var(--field)}
+#olist .or .t{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#olist .or .n{font-size:11px;opacity:.8;flex:none}
+#olist .or.d0 .t{font-weight:bold}#olist .or.d1{padding-left:20px}#olist .or.d2{padding-left:34px;font-size:12px}
+#olist .or.fr .t::before{content:"▭ ";opacity:.6}
+#olist .none{padding:8px;opacity:.7;font-size:12px}
+#dock.left{top:var(--vpTop,112px);transform:none;max-height:calc(100vh - var(--vpTop,112px) - 34px)}
+/* menus and bars can be larger */
+#titlebar,#menubar,#toolbar,#tabbar,#statusbar{zoom:var(--ui,1)}
+.mdrop>button{font-size:calc(13px * var(--ui,1))}
+/* appearance dialog */
+.lookdlg .lgrp{display:grid;gap:6px;border-top:1px solid var(--lo);padding-top:8px}
+.lookdlg .lh{font-weight:bold;font-size:12px;text-transform:uppercase;letter-spacing:.06em;opacity:.75}
+.lookdlg .opts{grid-template-columns:150px 1fr}
+.lookdlg .ck{display:flex;gap:6px;align-items:center}
+.lookdlg .scope{border-top:1px solid var(--lo);padding-top:8px}
+.lookdlg .sw-a{width:26px;padding:0;border-radius:50%!important}
+.lookdlg .sw-a:first-child{width:auto;padding:0 8px;border-radius:var(--r)!important}
+.lookdlg .sw-a[aria-pressed="true"]{outline:2px solid var(--ink);outline-offset:2px}
+@media (max-width:560px){.lookdlg .opts{grid-template-columns:1fr}}
+/* lists and checkboxes in text */
+.txt .bl{display:block;padding-left:calc(1.15em + var(--ind,0) * 1.1em);text-indent:-1.15em}
+.txt .bl:not(.ckl)::before{content:"•";display:inline-block;width:1.15em;text-indent:0;text-align:left}
+.txt .ck{display:inline-block;width:1.15em;text-indent:0;cursor:pointer;user-select:none}
+.txt .ckl.done{text-decoration:line-through;opacity:.6}
+.txt .ckl.done .ck{text-decoration:none}
+body.at-home #outline,body.at-home #ctxbar,body.at-home #minimap{display:none!important}
+body.sticky.nopaper .note:not(.c-none):not(.h1):not(.h2){background-image:none;box-shadow:0 1px 2px rgba(0,0,0,.15),0 4px 10px -6px rgba(0,0,0,.3)}
+body.sticky.nopaper .note:not(.c-none):not(.h1):not(.h2)::after{display:none}
+.lookdlg .seg .b[aria-pressed="true"]{background:var(--sel);color:var(--field);border-color:var(--sel)}
+/* ---------- reader: a PDF in its own tab ---------- */
+#reader{grid-row:5;grid-column:1;z-index:7;display:flex;flex-direction:column;min-height:0;background:var(--desk);position:relative}
+#reader .rtb{display:flex;flex-wrap:wrap;gap:4px 6px;align-items:center;padding:3px 6px;border-width:0 0 1px 0}
+#reader .rtb .b{height:22px;padding:0 7px}
+#reader .rname{font-weight:bold;max-width:26ch;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#reader .rsep{width:1px;align-self:stretch;background:var(--lo);margin:0 2px}
+#reader .rlbl{font-size:12px;opacity:.75}
+#reader .rpg{width:4.5ch;text-align:center}
+#reader .rq{width:18ch}
+#reader .rhits{font-size:12px;min-width:7ch}
+#reader .sp{flex:1}
+#reader .rmain{flex:1;display:flex;min-height:0}
+#reader .rtoc{width:min(300px,40vw);overflow:auto;padding:4px 0;flex:none}
+#reader .rtoc .ti{display:flex;justify-content:space-between;gap:8px;padding:3px 8px;cursor:pointer}
+#reader .rtoc .ti:hover{background:var(--face2)}#reader .rtoc .ti.on{background:var(--sel);color:var(--field)}
+#reader .rtoc .ti .n{opacity:.6;font-size:11px;flex:none}
+#reader .rtoc .none{padding:10px;opacity:.7}
+#reader .rpages{flex:1;overflow:auto;outline:none;background-color:var(--desk);background-image:var(--pat);background-size:var(--pat-size)}
+#reader .rgrid{display:flex;flex-wrap:wrap;justify-content:center;align-items:flex-start;gap:26px 22px;padding:18px 24px 60px}
+#reader .rt{display:grid;gap:4px;justify-items:center;position:relative}
+#reader .rsheet{position:relative;width:100%;background:#fff;box-shadow:var(--sh-card);border:1px solid var(--paper-line)}
+#reader .rsheet canvas{position:absolute;inset:0;width:100%;height:100%}
+#reader .rno{font-size:11px;opacity:.7}
+#reader .rt.cur .rsheet{outline:2px solid var(--sel);outline-offset:3px}
+#reader .rt.hit .rsheet{outline:3px solid var(--hit);outline-offset:2px}
+#reader .rt.miss .rsheet{opacity:.45}
+#reader .rbadge{position:absolute;top:4px;right:4px;z-index:3;background:var(--hit);color:#fff;font:bold 11px var(--f);padding:0 5px;border:1px solid #000}
+#reader .textLayer .rmark{background:rgba(255,0,255,.28)}
+#reader .textLayer .rflash{background:rgba(255,220,0,.45)}
+body.rnight #reader .rsheet canvas{filter:invert(1) hue-rotate(180deg)}
+body.rnight #reader .rsheet{background:#111}
+#reader .rsel{position:absolute;z-index:20;display:flex;gap:3px;align-items:center;padding:3px}
+#reader .rsel .b{height:22px;padding:0 7px}
+#reader .rerr{padding:20px}
+body.reading #viewport,body.reading #minimap,body.reading #ctxbar,body.reading #outline,body.reading #dock,body.reading #searchPanel{visibility:hidden}
+body.reading #toolbar{display:none}
+body.reading #sZoom{visibility:hidden}
+#home .hh{font-weight:bold;font-size:12px;text-transform:uppercase;letter-spacing:.06em;opacity:.75;margin-top:6px}
+#plist{max-height:min(40vh,420px);overflow:auto}
+#plist .r{display:grid;grid-template-columns:1fr auto auto;gap:16px;align-items:center;padding:5px 8px;cursor:pointer;border-bottom:1px dotted var(--lo)}
+#plist .r:hover{background:var(--face2)}#plist .r .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:bold}#plist .r .m{font-size:12px;opacity:.85;white-space:nowrap}
+#plist .none{padding:8px;opacity:.7}
+.tab.pdf span::before{content:"PDF";font:bold 9px var(--f);border:1px solid currentColor;padding:0 2px;margin-right:5px;vertical-align:1px;opacity:.75}
+/* ---------- drawing: pen, highlighter, eraser, shapes, text ---------- */
+#penbar{position:fixed;z-index:46;display:flex;align-items:center;gap:1px;padding:3px;flex-wrap:wrap;max-width:calc(100vw - 8px)}
+#penbar .cb{width:30px;height:30px}
+.cb .pdot,.pcol i,.pwd i{display:block;width:14px;height:14px;border-radius:50%;border:1px solid rgba(0,0,0,.25)}
+.pwd i{background:currentColor;border:0}
+#inkfx{position:fixed;left:0;top:0;width:100vw;height:100vh;pointer-events:none;z-index:60;overflow:visible}
+#inkfx path{fill:none;stroke-linecap:round;stroke-linejoin:round}
+#inkfx path.hl{opacity:.45}
+body.drawing #viewport,body.drawing #viewport .obj,body.drawing #viewport .obj *,body.drawing #reader .rpages,body.drawing #reader .rpages *{cursor:crosshair!important}
+body.t-eraser #viewport,body.t-eraser #viewport *,body.t-eraser #reader .rpages,body.t-eraser #reader .rpages *{cursor:cell!important}
+body.t-text #viewport,body.t-text #viewport *{cursor:text!important}
+body.drawing #viewport .obj button,body.drawing #viewport .wt,body.drawing #viewport .wt *{cursor:pointer!important}
+body.drawing .textLayer{pointer-events:none}
+body.drawing #viewport{touch-action:none}
+.obj.ink,.obj.shape{pointer-events:none;background:none;border:0;box-shadow:none}
+.obj.ink.sel,.obj.shape.sel{outline:1px dashed var(--sel);outline-offset:3px}
+.obj.shape.ln.sel{outline:none}
+.ink svg,.shape .shs{position:absolute;left:0;top:0;width:100%;height:100%;overflow:visible}
+.ink .iln{fill:none;stroke-linecap:round;stroke-linejoin:round}
+.ink.hl .iln{opacity:.45}
+:root:not([data-theme="dark"]) .ink.hl svg{mix-blend-mode:multiply}
+.ink .ihit{fill:none;stroke:transparent;stroke-linecap:round;pointer-events:stroke;cursor:move}
+.ink .rz,.shape .rz{pointer-events:auto}
+.shape .sh{fill:none;stroke:currentColor;stroke-width:var(--sw,2px);stroke-linecap:round;stroke-linejoin:round}
+.shape.filled .sh{fill:currentColor;fill-opacity:.13;pointer-events:visiblePainted;cursor:move}
+.shape .hd{fill:currentColor;stroke:none}
+.shape .shhit{fill:none;stroke:transparent;stroke-width:calc(var(--sw,2px) + 12px);pointer-events:stroke;cursor:move}
+.shape .txt{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);max-width:calc(100% - 14px);text-align:center;color:var(--ink);font:15px/1.35 var(--f-text,var(--f));pointer-events:auto;cursor:move;white-space:pre-wrap;overflow-wrap:anywhere}
+.shape .txt:empty:not(.ed){pointer-events:none}
+.shape .txt.ed{min-width:60px;min-height:1.3em;background:var(--field);outline:1px solid var(--sel);cursor:text}
+.shape.ln .rz{display:none}
+.shape .ep{display:none;position:absolute;width:12px;height:12px;margin:-6px 0 0 -6px;border:2px solid var(--sel);background:var(--field);border-radius:50%;pointer-events:auto;cursor:crosshair;z-index:6}
+.shape.ln.sel .ep{display:block}
+svg.pmk{position:absolute;inset:0;width:100%;height:100%;overflow:visible;clip-path:inset(0);pointer-events:none;z-index:1;mix-blend-mode:multiply;--pk:#1b1b1b}
+svg.pmk .mh{opacity:.42}
+svg.pmk .mi{fill:none;stroke-linecap:round;stroke-linejoin:round}
+svg.pmk .mi.hl{opacity:.45}
+body.rnight #reader svg.pmk,body.invertpdf .pg svg.pmk{mix-blend-mode:normal;--pk:#eee}
+#lbled{position:absolute;transform:translate(-50%,-50%);z-index:50;width:16ch;text-align:center;font:12px var(--f)}
+#reader .rsel .mk{width:22px;padding:0}
+#reader .rsel .mk i,#selbar .mk i{display:block;width:12px;height:12px;margin:auto;border-radius:2px;border:1px solid rgba(0,0,0,.3)}
+#selbar .mk{width:22px;padding:0}
+#reader .rtb [data-t]{width:26px;padding:0;display:inline-grid;place-items:center}
+#reader .rmk .hh{margin:10px 8px 4px;font-size:11px;text-transform:uppercase;letter-spacing:.06em;opacity:.7}
+#reader .rmk .mkt{display:flex;gap:6px;align-items:flex-start}
+#reader .rmk .mkt span:nth-child(2){flex:1;font-size:12px;line-height:1.3}
+#reader .rmk .sw{flex:none;width:10px;height:10px;margin-top:3px;border-radius:2px}
+/* ---------- start page: due today ---------- */
+#dlist{max-height:min(40vh,420px);overflow:auto}
+#dlist .r{display:grid;grid-template-columns:1fr auto auto;gap:16px;align-items:center;padding:5px 8px;cursor:pointer;border-bottom:1px dotted var(--lo)}
+#dlist .r:hover{background:var(--face2)}
+#dlist .r.zero .m:first-of-type{opacity:.55}
+#dlist .m{font-size:12px;opacity:.85}
+/* ---------- search: kinds and replace ---------- */
+#searchPanel .skinds{display:flex;flex-wrap:wrap;gap:3px;padding:4px 4px 0}
+#searchPanel .skinds .b{height:20px;padding:0 6px;font-size:11px}
+#searchPanel .srep{display:flex;gap:4px;padding:4px}
+#searchPanel .srep .f{flex:1;min-width:0}
+/* ---------- backups ---------- */
+.bkwrap{display:grid;grid-template-columns:minmax(150px,200px) 1fr;gap:8px;min-height:300px}
+.bklist{max-height:60vh;overflow:auto;display:grid;gap:2px;align-content:start}
+.bklist .b{height:auto;padding:3px 8px;text-align:left}
+.bkview{padding:8px;max-height:60vh;overflow:auto;font-size:13px}
+.bkh{font-weight:bold;margin:8px 0 3px}.bkh:first-child{margin-top:0}
+.bki{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:.9}
+@media (max-width:560px){.bkwrap{grid-template-columns:1fr}}
+/* ---------- print view ---------- */
+#printview{display:none}
+@media print{
+  body.printing>*:not(#printview){display:none!important}
+  body.printing{background:#fff!important;overflow:visible!important}
+  body.printing #printview{display:block;color:#000;font:11pt/1.45 Georgia,"Times New Roman",serif;padding:0}
+  #printview h1{font-size:20pt;margin:0 0 10pt}
+  #printview h2{font-size:15pt;margin:14pt 0 6pt;break-after:avoid}
+  #printview h3{font-size:12.5pt;margin:10pt 0 4pt;break-after:avoid}
+  #printview .pdef,#printview .pq,#printview .pnote{margin:0 0 7pt;break-inside:avoid}
+  #printview .pdef small{color:#666}
+  #printview .pq .qq{font-weight:bold}#printview .pq .qa{padding-left:12pt}
+  #printview .pnote:not(.plain){border-left:3pt solid #e5c84a;padding-left:6pt}
+  #printview table{border-collapse:collapse;margin:4pt 0 9pt;break-inside:avoid}
+  #printview td,#printview th{border:1px solid #999;padding:3pt 6pt;vertical-align:top}
+  #printview .pmx td{width:45%;height:48pt}
+  #printview ul.pmap{margin:4pt 0 9pt;padding-left:14pt}
+  #printview img{max-width:100%;max-height:60vh;margin:4pt 0}
+}
+/* ---------- the board beside the PDF ---------- */
+#titlebar,#menubar,#toolbar,#tabbar,#statusbar{grid-column:1/-1}
+body.split.reading #app{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+body.split.reading #viewport{visibility:visible;grid-column:1}
+body.split.reading #reader{grid-column:2;border-left:3px solid var(--lo)}
+body.split.reading #toolbar{display:flex}
+body.split.reading #ctxbar,body.split.reading #outline,body.split.reading #dock,body.split.reading #searchPanel,body.split.reading #sZoom{visibility:visible}
+body.split.reading #searchPanel{right:calc(50vw + 10px)}
+@media print{#printview .bl,#printview .ckl{display:block}}
+svg.pmk .mi.pf{stroke:none}
+.obj.snap{outline:2px dashed var(--sel)!important;outline-offset:5px}
+/* big boards: items far off screen are not painted; the board layer is kept while it moves */
+#world .obj.off{visibility:hidden}
+#viewport.panning #world,#viewport.wheeling #world{will-change:transform}
+/* reader side panel: chapters, pages, marked */
+#reader .rtoc{display:flex;flex-direction:column;padding:0}
+#reader .rtabs{position:sticky;top:0;z-index:2;display:flex;gap:2px;padding:4px;background:var(--face);border-bottom:1px solid var(--lo)}
+#reader .rtabs .b{flex:1;height:22px;padding:0 4px;font-size:12px}
+#reader .rtc{padding:4px 0}
+#reader .rthumbs{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:12px 10px;padding:6px 10px}
+#reader .rth{position:relative;cursor:pointer;text-align:center}
+#reader .rth canvas{display:block;width:100%;background:#fff;border:1px solid var(--paper-line);box-shadow:var(--sh-card)}
+#reader .rth .n{font-size:11px;opacity:.8}
+#reader .rth.on canvas{outline:2px solid var(--sel);outline-offset:2px}
+#reader .rth.mk::after{content:"";position:absolute;top:4px;right:4px;width:9px;height:9px;border-radius:50%;background:var(--hit);border:1px solid #fff}
+body.rnight #reader .rth canvas{filter:invert(1) hue-rotate(180deg)}
+#reader .rmf{display:flex;flex-wrap:wrap;gap:3px;padding:4px 8px 6px}
+#reader .rmf .b{height:22px;min-width:26px;padding:0 6px;display:inline-grid;place-items:center}
+#reader .rmf .b i{display:block;width:12px;height:12px;border-radius:2px;border:1px solid rgba(0,0,0,.3)}
+#reader .rmk,#reader .mkt{font-size:12px}
+#reader .mkt{display:flex;gap:6px;align-items:flex-start}
+#reader .mkt span:nth-child(2){flex:1;line-height:1.3}
+#reader .mkt .sw{flex:none;width:10px;height:10px;margin-top:3px;border-radius:2px}
+#reader .mkt .sw.ink{border-radius:50%}
+#reader .rtc .none{padding:8px;opacity:.7;font-size:12px}
+/* PDF on the board: a window whose pages scroll inside (like pdfgrid) */
+.win.pdf .pages{flex:1 1 auto;min-height:0;overflow:auto;position:relative;scrollbar-gutter:stable;padding:12px 14px 14px 12px;align-content:flex-start;gap:22px 12px;overscroll-behavior:contain}
+.win.pdf .pages.one{justify-content:center;align-items:center;align-content:center}
+.win.pdf .wt{flex:none}
+.win.pdf .wt .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;flex:1 1 auto}
+.win.pdf .wt .pp{flex:none}
+.obj.pdf.sel .pages{outline:1px solid var(--sel);outline-offset:-1px}
+#reader .rgrid.one{flex-direction:column;flex-wrap:nowrap;align-items:center}
+#home .hnote{padding:8px 10px;font-size:13px;line-height:1.5;border-left:4px solid var(--due,#c00)}
+#home .hnote .b{height:auto;padding:2px 8px;margin:0 2px}
+#savewarn{position:fixed;left:50%;top:6px;transform:translateX(-50%);z-index:90;display:flex;gap:6px;align-items:center;padding:6px 10px;max-width:calc(100vw - 20px);font-size:13px;border-left:5px solid var(--due,#c00)}

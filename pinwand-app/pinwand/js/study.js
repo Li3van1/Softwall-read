@@ -10,13 +10,13 @@ STUDY.dueCount = () => all().filter(o => isStudy(o) && isDue(o)).length;
 
 // ---------- review ----------
 function scopeList() {
-  const frames = all().filter(o => isArea(o) && (o.title || "").trim()).sort((a, b) => a.y - b.y || a.x - b.x);
-  return [["all", "whole board"], ...(B.sel.size > 1 ? [["sel", `selection (${B.selected().filter(isStudy).length})`]] : []), ...frames.map(f => ["f:" + f.id, texPlain(f.title).slice(0, 40)])];
+  const secs = PW.sections ? PW.sections.list().filter(x => texPlain(isArea(x.o) ? x.o.title || "" : x.o.text || "").trim()) : [];
+  return [["all", "whole board"], ...(B.sel.size > 1 ? [["sel", `selection (${B.selected().filter(isStudy).length})`]] : []), ...secs.map(x => ["f:" + x.o.id, "\u00a0\u00a0".repeat(x.depth) + texPlain(isArea(x.o) ? x.o.title : x.o.text).split("\n")[0].slice(0, 44)])];
 }
 function scopeCards(sc) {
   let L = all().filter(isStudy);
   if (sc === "sel") { const s = new Set(B.sel); L = L.filter(o => s.has(o.id)); }
-  else if (sc.startsWith("f:")) { const f = obj(sc.slice(2)); if (f) { const ids = new Set(B.inside(f).map(o => o.id)); L = L.filter(o => ids.has(o.id)); } }
+  else if (sc.startsWith("f:")) { const f = obj(sc.slice(2)); if (f) { const ids = new Set((PW.sections ? PW.sections.owned(f) : B.inside(f)).map(o => o.id)); L = L.filter(o => ids.has(o.id)); } }
   return L;
 }
 STUDY.review = function () {

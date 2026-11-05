@@ -10,18 +10,18 @@
 <link rel="stylesheet" href="vendor/katex.min.css">
 <link rel="stylesheet" href="app.css">
 <link rel="stylesheet" href="styles.css">
-<script>try{const L=JSON.parse(localStorage.getItem("pinwand:look")||"{}"),t=L.theme||localStorage.getItem("pinwand:theme")||"auto",r=document.documentElement;r.dataset.theme=t==="auto"?(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"):t;r.dataset.style=L.style||"retro"}catch(e){document.documentElement.dataset.theme="light"}</script>
+<script>try{const L=JSON.parse(localStorage.getItem("pinwand:look")||"{}"),t=L.theme||localStorage.getItem("pinwand:theme")||"auto",r=document.documentElement;r.dataset.theme=t==="auto"?(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"):t;r.dataset.style=L.style||"retro";if(L.shade==="soft"&&(r.dataset.theme==="dark"||/chalk|blueprint|terminal/.test(r.dataset.style)))r.dataset.shade="soft"}catch(e){document.documentElement.dataset.theme="light"}</script>
 </head>
 <body>
 <div id="app">
   <div id="titlebar"><span id="ttl">pinwand</span><span class="sp"></span><span id="ttlSave"></span></div>
   <div id="menubar" class="bevel" role="menubar"></div>
   <div id="toolbar" class="bevel">
-    <div class="grp mk"><button class="b" data-cmd="new-note" title="Note (N)">Note</button><button class="b" data-cmd="new-def" title="Definition (D)">Def</button><button class="b" data-cmd="new-q" title="Question (Q)">Q</button><button class="b" data-cmd="new-node" title="Map node (M)">Node</button><button class="b" data-cmd="new-table" title="Table (T)">Table</button><button class="b" data-cmd="new-frame" title="Frame (F)">Frame</button></div>
+    <div class="grp mk"><button class="b" data-cmd="new-note" title="Note (N)">Note</button><button class="b" data-cmd="heading" title="Heading (H)">Heading</button><button class="b" data-cmd="new-def" title="Definition (D)">Def</button><button class="b" data-cmd="new-q" title="Question (Q)">Q</button><button class="b" data-cmd="new-node" title="Map node (M)">Node</button><button class="b" data-cmd="new-table" title="Table (T)">Table</button><button class="b" data-cmd="new-frame" title="Frame (F)">Frame</button></div>
     <span class="sep"></span>
-    <div class="grp mk"><button class="b" data-cmd="insert-file" title="PDF or image (I)">PDF/Img</button><button class="b" data-cmd="new-fig-flow" title="Live figure">Fig</button></div>
+    <div class="grp mk"><button class="b" data-cmd="insert-file" title="PDF or image (I)">PDF/Img</button><button class="b" data-cmd="new-fig-flow" title="Live figure">Fig</button><button class="b" data-cmd="draw-pen" title="Draw (B): pen, highlighter, shapes, text">Draw</button></div>
     <span class="sep"></span>
-    <div class="grp mk"><button class="b" data-cmd="review" id="tbReview" title="Review (R)">Review <span id="dueN"></span></button><button class="b" data-cmd="walk" title="Walk (W)">Walk</button><button class="b" data-cmd="cover" id="tbCover" title="Cover definitions (H)">Cover</button><button class="b" data-cmd="gaps" title="Gaps (G)">Gaps</button><button class="b" data-cmd="present" title="Present (P)">Present</button></div>
+    <div class="grp mk"><button class="b" data-cmd="review" id="tbReview" title="Review (R)">Review <span id="dueN"></span></button><button class="b" data-cmd="walk" title="Walk (W)">Walk</button><button class="b" data-cmd="cover" id="tbCover" title="Cover definitions (C)">Cover</button><button class="b" data-cmd="gaps" title="Gaps (G)">Gaps</button><button class="b" data-cmd="present" title="Present (P)">Present</button></div>
     <span class="sp"></span>
     <div class="grp"><input class="f" id="qbox" type="text" placeholder="search  /" spellcheck="false" autocomplete="off" aria-label="Search"></div>
     <div class="grp"><button class="b" data-cmd="zoom-out" title="Zoom out (-)">-</button><span id="zv" class="mono">100%</span><button class="b" data-cmd="zoom-in" title="Zoom in (+)">+</button><button class="b" data-cmd="fit" title="Fit all (0)">fit</button><button class="b" data-cmd="save" title="Save (Ctrl+S)">Save</button></div>
@@ -30,7 +30,7 @@
   <div id="viewport" tabindex="-1">
     <div id="world"><svg id="edges" xmlns="http://www.w3.org/2000/svg"></svg></div>
   </div>
-  <div id="home" hidden><div class="win"><div class="wt"><span class="nm" id="homeTtl">boards</span></div><div class="in"><div class="row1"><button class="b" id="hNew" type="button">New board…</button><button class="b" id="hImport" type="button">Import old board…</button><span class="sp"></span><button class="b" id="hWs" type="button">Workspace…</button></div><div id="hlist" class="sunk" role="listbox" tabindex="0"></div></div></div></div>
+  <div id="home" hidden><div class="win"><div class="wt"><span class="nm" id="homeTtl">boards</span></div><div class="in"><div class="row1"><button class="b" id="hNew" type="button">New board…</button><button class="b" id="hPdf" type="button">Read a PDF…</button><button class="b" id="hOpen" type="button">Open a file…</button><button class="b" id="hImport" type="button">Import old board…</button><span class="sp"></span><button class="b" id="hWs" type="button">Workspace…</button></div><div id="hnote" class="hnote sunk" hidden></div><div class="hh">boards</div><div id="hlist" class="sunk" role="listbox" tabindex="0"></div><div class="hh" hidden>due today</div><div id="dlist" class="sunk" hidden></div><div class="hh">recently read PDFs</div><div id="plist" class="sunk"></div></div></div></div>
   <div id="statusbar" class="bevel"><span id="sBoard">-</span><span id="sSave">-</span><span id="sSel"></span><span id="sDue"></span><span class="grow" id="sMsg"></span><span id="sZoom"></span></div>
 </div>
 <button id="chromeToggle" class="b" title="Menus (Ctrl+.)" aria-label="Toggle menus">▲</button>
@@ -52,8 +52,12 @@
 <script src="js/search.js"></script>
 <script src="js/importold.js"></script>
 <script src="js/look.js"></script>
+<script src="js/reader.js"></script>
 <script src="js/main.js"></script>
 <script src="js/extra.js"></script>
+<script src="js/sections.js"></script>
 <script src="js/tools.js"></script>
+<script src="js/draw.js"></script>
+<script src="js/more.js"></script>
 </body>
 </html>

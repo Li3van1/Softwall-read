@@ -77,13 +77,13 @@ cmd({ id: "gaps", menu: "Study", label: "Gaps (hide bold terms and formulas)", k
 // ---------- present: frame by frame ----------
 const PRES = PW.present = { on: false };
 function sections() {
-  const areas = all().filter(o => isArea(o) && !PW.map.isHidden(o));
-  const list = areas.length ? areas : all().filter(o => (o.type === "note" && o.style === "h1") || (o.type === "node" && !o.parent && MAP_has(o)));
-  return list.sort((a, b) => Math.abs(a.y - b.y) < 200 ? a.x - b.x : a.y - b.y);
+  const list = PW.sections.list().map(x => x.o).filter(o => isArea(o) || o.style === "h1");
+  if (list.length) return list;
+  return all().filter(o => o.type === "node" && !o.parent && MAP_has(o)).sort((a, b) => Math.abs(a.y - b.y) < 200 ? a.x - b.x : a.y - b.y);
 }
 const MAP_has = o => all().some(c => c.parent === o.id);
 PRES.start = function () {
-  const s = sections(); if (!s.length) { toast("no frames to present"); return; }
+  const s = sections(); if (!s.length) { toast("make a heading (H) or a frame (F) first"); return; }
   B.endEdit(); PRES.on = true; PRES.list = s; PRES.i = 0; PRES.wasChrome = document.body.classList.contains("nochrome");
   document.body.classList.add("nochrome", "presenting");
   const bar = h("div", { id: "presbar", class: "bevel" }, h("button", { class: "b", onclick: () => PRES.go(PRES.i - 1) }, "‹"), h("span", { id: "presT" }), h("button", { class: "b", onclick: () => PRES.go(PRES.i + 1) }, "›"), h("button", { class: "b", onclick: () => PRES.stop() }, "×"));
@@ -91,7 +91,7 @@ PRES.start = function () {
 };
 PRES.go = function (i) {
   if (!PRES.on) return; PRES.i = clamp(i, 0, PRES.list.length - 1); const o = PRES.list[PRES.i];
-  const group = isArea(o) ? [o] : [o, ...PW.map.descendants(o.id).map(obj)];
+  const group = isArea(o) ? [o] : PW.sections.bounds(o);
   B.sel.clear(); B.updSel(); B.fit(group, 3);
   $("presT").textContent = `${PRES.i + 1} / ${PRES.list.length}  ${texPlain(o.title || o.text || "").slice(0, 60)}`;
 };
@@ -104,7 +104,7 @@ PRES.key = function (e) {
   if (k === "g" || k === "G") { PW.gaps.toggle(); return true; }
   return false;
 };
-cmd({ id: "present", menu: "Study", label: "Present frame by frame", key: "P", enabled: () => !!B.doc, run: () => PRES.start() });
+cmd({ id: "present", menu: "Study", label: "Present section by section", key: "P", enabled: () => !!B.doc, run: () => PRES.start() });
 
 // ---------- connections: which definition uses which term ----------
 PW.connections = function () {
@@ -209,7 +209,7 @@ PW.exportPNG = async function (asClipboard) {
   const wrapW = h("div", { style: { position: "absolute", left: (pad - b.x0) + "px", top: (pad - b.y0) + "px" } }); root.append(wrapW);
   const ids = new Set(list.map(o => o.id)), ed = svg.cloneNode(true); ed.style.zIndex = 1; wrapW.append(ed);
   for (const o of list) {
-    const src = B.el(o.id); if (!src) continue; const c = src.cloneNode(true); c.classList.remove("sel", "flash");
+    const src = B.el(o.id); if (!src) continue; const c = src.cloneNode(true); c.classList.remove("sel", "flash", "off", "snap");
     const sc = src.querySelectorAll("canvas"), cc = c.querySelectorAll("canvas"); cc.forEach((x, i) => { try { const im = h("img", { src: sc[i].toDataURL("image/png"), style: { width: sc[i].clientWidth + "px", height: sc[i].clientHeight + "px", display: "block", position: getComputedStyle(sc[i]).position, inset: "0" } }); x.replaceWith(im); } catch (e) { } });
     for (const im of c.querySelectorAll("img")) { if (/^blob:/.test(im.src)) { try { im.src = await fetch(im.src).then(x => x.blob()).then(toDataURL); } catch (e) { } } }
     c.querySelectorAll("iframe").forEach(f => f.replaceWith(h("div", { style: { flex: "1", display: "grid", placeItems: "center", background: "var(--paper)", color: "var(--paper-ink)" } }, o.title || "html")));
@@ -229,3 +229,12 @@ PW.exportPNG = async function (asClipboard) {
 };
 cmd({ id: "export-png", menu: "File", label: "Save as picture (selection or board)", enabled: () => !!B.doc, run: () => PW.exportPNG(false) });
 cmd({ id: "copy-png", menu: "File", label: "Copy as picture", enabled: () => !!B.doc, run: () => PW.exportPNG(true) });
+
+// ---------- ticking a checkbox in a note ("- [ ] task") ----------
+world.addEventListener("pointerdown", e => {
+  const ck = e.target.closest(".ck"); if (!ck || B.editing || e.button !== 0) return; const t = ck.closest(".txt[data-f]"), oe = ck.closest(".obj"); if (!t || !oe) return;
+  const o = obj(oe.dataset.id); if (!o) return; e.stopPropagation(); e.preventDefault();
+  const T = B.types[o.type], f = t.dataset.f, src = String((T && T.get ? T.get(o, f) : o[f]) || ""), want = +ck.dataset.k; let k = 0;
+  const v = src.replace(/^(\s*[-*•] \[)([ xX])(\])/gm, (m, a, x, c) => (k++ === want ? a + (/x/i.test(x) ? " " : "x") + c : m));
+  if (T && T.set) T.set(o, f, v); else o[f] = v; B.render(o); B.commit();
+}, true);

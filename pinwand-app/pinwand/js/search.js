@@ -2,21 +2,28 @@
 // pinwand · search across cards, notes, map branches and the text of every PDF; command palette
 const SEARCH = PW.search = {};
 const qbox = $("qbox");
-let panel = null, hits = [], hi = 0, seq = 0;
+let panel = null, hits = [], hi = 0, seq = 0, kind = "";
+const KINDS = [["", "all"], ["def", "definitions"], ["q", "questions"], ["note", "notes"], ["map", "map"], ["table", "tables"], ["pdf", "PDF pages"]];
 const KIND = { note: "note", def: "def", q: "q", node: "map", frame: "frame", pdf: "pdf", fig: "fig", image: "img" };
 function ensurePanel() {
   if (panel) return panel;
-  panel = h("div", { id: "searchPanel", class: "panel bevel", hidden: true }, h("div", { class: "wt" }, h("span", { text: "search" }), h("span", { class: "sp" }), h("button", { class: "b", onclick: () => SEARCH.close() }, "×")), h("div", { id: "sres", class: "sunk" }));
-  document.body.append(panel); panel.querySelector("#sres").addEventListener("click", e => { const d = e.target.closest("div[data-i]"); if (d) { hi = +d.dataset.i; open(hits[hi]); paint(); } });
+  panel = h("div", { id: "searchPanel", class: "panel bevel", hidden: true }, h("div", { class: "wt" }, h("span", { text: "search" }), h("span", { class: "sp" }), h("button", { class: "b", onclick: () => SEARCH.close() }, "×")),
+    h("div", { class: "skinds" }, KINDS.map(([k, l]) => h("button", { class: "b", "data-k": k, "aria-pressed": String(k === kind) }, l))),
+    h("div", { class: "srep" }, h("input", { class: "f", id: "srepl", type: "text", placeholder: "replace with…", spellcheck: "false" }), h("button", { class: "b", id: "srepb", title: "replace in every card, note, branch, table and frame of this board (not in PDFs)" }, "replace all")),
+    h("div", { id: "sres", class: "sunk" }));
+  document.body.append(panel);
+  panel.querySelector(".skinds").addEventListener("click", e => { const b = e.target.closest("[data-k]"); if (!b) return; kind = b.dataset.k; panel.querySelectorAll(".skinds [data-k]").forEach(x => x.setAttribute("aria-pressed", String(x.dataset.k === kind))); SEARCH.run(qbox.value); });
+  const rin = panel.querySelector("#srepl"); rin.addEventListener("keydown", e => { e.stopPropagation(); if (e.key === "Enter") { e.preventDefault(); SEARCH.replace(qbox.value, rin.value); } if (e.key === "Escape") { qbox.focus(); } });
+  panel.querySelector("#srepb").addEventListener("click", () => SEARCH.replace(qbox.value, rin.value)); panel.querySelector("#sres").addEventListener("click", e => { const d = e.target.closest("div[data-i]"); if (d) { hi = +d.dataset.i; open(hits[hi]); paint(); } });
   return panel;
 }
 function snippet(t, q) { const i = t.toLowerCase().indexOf(q); if (i < 0) return t.slice(0, 80); const a = Math.max(0, i - 30); return (a ? "…" : "") + t.slice(a, i) + "\u0001" + t.slice(i, i + q.length) + "\u0002" + t.slice(i + q.length, i + q.length + 50); }
 SEARCH.run = async function (q) {
   const my = ++seq; q = q.trim().toLowerCase(); ensurePanel(); if (!q) { SEARCH.close(); return; }
   const out = [];
-  for (const o of all()) { const t = texPlain(B.textOf(o)); if (t.toLowerCase().includes(q)) out.push({ o, kind: KIND[o.type] || o.type, text: snippet(t, q) }); }
+  for (const o of all()) { const t = texPlain(B.textOf(o)), k = KIND[o.type] || o.type; if ((!kind || kind === k) && t.toLowerCase().includes(q)) out.push({ o, kind: k, text: snippet(t, q) }); }
   hits = out; hi = 0; paint(q, true);
-  const pdfs = all().filter(o => o.type === "pdf"); let pdfHits = [];
+  const pdfs = kind && kind !== "pdf" ? [] : all().filter(o => o.type === "pdf"); let pdfHits = [];
   for (const p of pdfs) { const T = await PW.pdf.texts(p.asset).catch(() => []); if (my !== seq) return; T.forEach((t, i) => { const L = t.toLowerCase(); let n = 0, k = L.indexOf(q); const first = k; while (k >= 0) { n++; k = L.indexOf(q, k + q.length); } if (n) pdfHits.push({ pdf: p, page: i + 1, n, kind: "pdf", text: snippet(t, q).replace(/^/, `${(p.name || "pdf").replace(/\.pdf$/i, "")} p.${i + 1}${n > 1 ? " (" + n + ")" : ""}: `) }); }); }
   hits = out.concat(pdfHits); paint(q, false);
 };
@@ -28,6 +35,20 @@ function paint(q, loading) {
   const on = box.querySelector(".on"); on && on.scrollIntoView({ block: "nearest" });
 }
 function open(x) { if (!x) return; if (x.kind === "pdf") PW.pdf.goto({ pdf: x.pdf.id, page: x.page }, qbox.value); else { if (PW.map.isHidden(x.o)) { let p = obj(x.o.parent); while (p) { p.collapsed = false; p = p.parent && obj(p.parent); } B.renderAll(); PW.map.relayoutAll(); } B.select([x.o.id]); B.reveal(x.o, .6); B.flash(x.o.id); } }
+// replace: literal text, any case, in the written fields of every item (formulas included)
+const FIELDS = { note: ["text"], def: ["term", "def", "src"], q: ["q", "a", "src"], node: ["text"], frame: ["title"], shape: ["text"], matrix: ["title", "xl", "xr", "yb", "yt", "q1", "q2", "q3", "q4"] };
+SEARCH.replace = async function (q, r) {
+  q = (q || "").trim(); if (!q || !B.doc) { toast("type what to find in the search box first"); return; }
+  const re = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi"); let n = 0, items = 0;
+  const swap = s => { if (typeof s !== "string") return s; const m = s.match(re); if (!m) return s; n += m.length; return s.replace(re, () => r); };
+  for (const o of all()) { if (kind && kind !== (KIND[o.type] || o.type)) continue; const before = n;
+    for (const f of FIELDS[o.type] || []) if (o[f]) o[f] = swap(o[f]);
+    if (o.type === "table" && o.rows) o.rows = o.rows.map(row => row.map(swap));
+    if (n > before) { items++; B.render(o); } }
+  if (!n) { toast("nothing to replace"); return; }
+  B.renderEdges(); PW.map && PW.map.relayoutAll(false); B.commit(); toast(n + " replaced in " + items + (items === 1 ? " item" : " items") + " (Ctrl+Z undoes)"); qbox.value = r; SEARCH.run(r);
+};
+cmd({ id: "replace", menu: "Edit", label: "Find and replace…", key: "Ctrl+H", run: () => { SEARCH.focus(); ensurePanel(); panel.hidden = false; if (qbox.value.trim()) setTimeout(() => panel.querySelector("#srepl").focus(), 0); } });
 SEARCH.close = () => { if (panel) panel.hidden = true; hits = []; };
 const runSoon = debounce(v => SEARCH.run(v), 200);
 qbox.addEventListener("input", () => runSoon(qbox.value));

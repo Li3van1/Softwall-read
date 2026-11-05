@@ -52,6 +52,7 @@ const store = PW.store = {
   },
   async readBoard(file) { const f = await this.readFile(this.root, file); return JSON.parse(await f.text()); },
   async writeBoard(file, data) { await this.writeFile(this.root, file, JSON.stringify(data)); },
+  async mod(file) { try { return (await (await this.root.getFileHandle(file)).getFile()).lastModified || 0; } catch (e) { return 0; } },
   async exists(file) { try { await this.root.getFileHandle(file); return true; } catch (e) { return false; } },
   async remove(file) { await this.root.removeEntry(file); },
   // assets are content-addressed, so the same PDF is stored once

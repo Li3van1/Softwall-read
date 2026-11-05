@@ -135,3 +135,14 @@
 :root[data-style="contrast"] .card,:root[data-style="contrast"] .note:not(.c-none),:root[data-style="contrast"] .node,:root[data-style="contrast"] .image{border-width:2px}
 :root[data-style="contrast"] #edges .tree{stroke-width:3.5}
 :root:not([data-style="retro"]) button.b[aria-pressed="true"]{background:var(--sel);color:var(--field);border-color:var(--sel)}
+
+/* ---------- softer dark mode: the same styles, lifted out of the deep dark ---------- */
+:root[data-style="retro"][data-theme="dark"][data-shade="soft"]{--desk:#2f383d;--dot:rgba(255,255,255,.08);--face:#4b5155;--face2:#42484c;--hi:#6c7377;--lo:#2b3033;--field:#363c40;--paper:#3d4347;--paper-line:#24292c;--shadow:rgba(0,0,0,.45);--title:#34587a;
+  --n-yellow:#6b6331;--n-green:#3a5e3f;--n-blue:#34536f;--n-pink:#6e4052;--n-grey:#52575b;--n-white:#454b4f;--frame:rgba(255,255,255,.05)}
+:root[data-style="studio"][data-theme="dark"][data-shade="soft"]{--desk:#2d322c;--dot:#454b42;--face:#383e36;--face2:#323831;--hi:#4b5247;--lo:#40463c;--field:#323831;--appbar:#383e36;--paper:#383e36;--paper-line:#4b5247;--shadow:rgba(0,0,0,.35);--frame:rgba(124,196,173,.06)}
+:root[data-style="paper"][data-theme="dark"][data-shade="soft"]{--desk:#2b3344;--face:#384356;--face2:#313b4c;--hi:#4b5872;--lo:#232b39;--field:#2f3849;--appbar:#384356;--paper:#354052;--paper-line:#4e5b78;--shadow:rgba(0,0,0,.35);
+  --n-yellow:#5d5638;--n-green:#3a5642;--n-blue:#36496a;--n-pink:#5f4150;--n-grey:#444b5b;--n-white:#363f52}
+:root[data-style="contrast"][data-theme="dark"][data-shade="soft"]{--desk:#1e1e1e;--face:#1e1e1e;--field:#1e1e1e;--paper:#1e1e1e;--face2:#3a3a3a}
+:root[data-style="chalk"][data-shade="soft"]{--desk:#3f5f4c;--face:#4a6b57;--face2:#405f4c;--field:#3a5646;--paper:#456450;--hi:#6a8f78;--lo:#2e4537}
+:root[data-style="blueprint"][data-shade="soft"]{--desk:#2a63ab;--face:#2a5a99;--face2:#245189;--field:#2a5a99;--paper:#2f68b2;--lo:#1a3f73}
+:root[data-style="terminal"][data-shade="soft"]{--desk:#191f18;--face:#1f271e;--face2:#1a2119;--field:#192018;--paper:#1c241b;--n-yellow:#2c2b15;--n-green:#16301f;--n-blue:#152a33;--n-pink:#33192a;--n-grey:#1f251e;--n-white:#1a221a}

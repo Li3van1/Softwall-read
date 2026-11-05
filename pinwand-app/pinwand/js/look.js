@@ -12,23 +12,33 @@ const STYLES = [
 const FIXED_DARK = new Set(["chalk", "blueprint", "terminal"]);
 const NOTE_FONTS = { auto: ["style", null, 1], hand: ["handwriting", '"Kalam","Comic Sans MS",cursive', 1.3], marker: ["marker", '"Caveat","Segoe Print",cursive', 1.45], sans: ["sans", '"Figtree","Segoe UI",system-ui,sans-serif', 1], serif: ["serif", '"Georgia","Cambria",serif', 1.05], mono: ["mono", '"Consolas","Cascadia Mono","DejaVu Sans Mono",monospace', .95] };
 const PATS = { auto: ["style"], dots: ["dots", "radial-gradient(var(--dot) 1.2px,transparent 1.3px)", "20px 20px"], fine: ["fine dots", "radial-gradient(var(--dot) 1px,transparent 1px)", "6px 6px"], grid: ["grid", "linear-gradient(var(--dot) 1px,transparent 1px),linear-gradient(90deg,var(--dot) 1px,transparent 1px)", "24px 24px"], ruled: ["ruled", "repeating-linear-gradient(transparent 0 31px,var(--dot) 31px 32px)", "auto"], plain: ["plain", "none", "auto"] };
-const LOOK_DEF = { style: "retro", theme: "auto", ts: 1, notes: "sticky", noteFont: "auto", pat: "auto", edges: "elbow", edgeW: 1, motion: true };
-const BOARD_KEYS = ["style", "notes", "noteFont", "pat", "edges", "edgeW"];
+const LOOK_DEF = { style: "retro", theme: "auto", shade: "deep", ts: 1, ui: 1, uiFont: "style", accent: "style", corners: "style", notes: "sticky", paper: true, noteFont: "auto", noteW: "m", pat: "auto", edges: "elbow", edgeW: 1, motion: true };
+const BOARD_KEYS = ["style", "accent", "corners", "notes", "paper", "noteFont", "pat", "edges", "edgeW"];
+const ACCENTS = { blue: ["#1f4fbf", "#86b4ff"], teal: ["#0f766e", "#5eead4"], green: ["#1f7a4d", "#86dca5"], orange: ["#c2610f", "#f5ab64"], red: ["#b3261e", "#ff9a92"], pink: ["#c2185b", "#ff8ac2"], purple: ["#6b3fb5", "#c9a6ff"] };
+const UI_FONTS = { style: ["style", null], sans: ["sans", '"Figtree","Segoe UI",system-ui,sans-serif'], system: ["Windows", '"Segoe UI",system-ui,sans-serif'], mono: ["mono", '"Consolas","Cascadia Mono","DejaVu Sans Mono",monospace'], serif: ["serif", '"Georgia","Cambria",serif'] };
+const NOTE_W = { s: 180, m: 220, l: 280 };
+PW.noteW = () => NOTE_W[PW.look.noteW] || 220;
 const LOOK = PW.look = Object.assign({}, LOOK_DEF);
 function globalLook() { let g = {}; try { g = JSON.parse(ls.get("look", "{}")); } catch (e) { } if (!g.theme) g.theme = ls.get("theme", "auto"); return Object.assign({}, LOOK_DEF, g); }
 function boardLook() { return B.doc && B.doc.settings && B.doc.settings.look || null; }
 LOOK.resolve = () => { const g = globalLook(), b = boardLook(); if (b) BOARD_KEYS.forEach(k => { if (b[k] != null) g[k] = b[k]; }); return g; };
 LOOK.apply = function (rerender = true) {
-  const L = LOOK.resolve(), r = document.documentElement, before = [r.dataset.style, r.style.cssText, LOOK.edges, LOOK.edgeW, document.body.classList.contains("sticky")].join("|");
+  const L = LOOK.resolve(), r = document.documentElement, before = [r.dataset.style, r.style.cssText, LOOK.edges, LOOK.edgeW, document.body.classList.contains("sticky"), document.body.classList.contains("tilt")].join("|");
   Object.assign(LOOK, L);
   r.dataset.style = L.style; r.dataset.theme = L.theme === "auto" ? (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light") : L.theme;
+  const darkNow = r.dataset.theme === "dark" || FIXED_DARK.has(L.style); if (darkNow && L.shade === "soft") r.dataset.shade = "soft"; else delete r.dataset.shade;
+  const ac = ACCENTS[L.accent]; ["--sel", "--title", "--title-ink", "--link", "--root-bg"].forEach(k => r.style.removeProperty(k));
+  if (ac) { const c = darkNow ? ac[1] : ac[0]; r.style.setProperty("--sel", c); r.style.setProperty("--link", c); r.style.setProperty("--title", darkNow ? `color-mix(in srgb, ${ac[1]} 38%, #15181b)` : ac[0]); r.style.setProperty("--title-ink", "#ffffff"); r.style.setProperty("--root-bg", darkNow ? `color-mix(in srgb, ${ac[1]} 45%, #15181b)` : ac[0]); }
+  if (L.corners === "square") { r.style.setProperty("--r", "0px"); r.style.setProperty("--rc", "0px"); } else if (L.corners === "round") { r.style.setProperty("--r", "8px"); r.style.setProperty("--rc", "10px"); } else { r.style.removeProperty("--r"); r.style.removeProperty("--rc"); }
+  const uf = UI_FONTS[L.uiFont]; if (uf && uf[1]) { r.style.setProperty("--f-ui", uf[1]); r.style.setProperty("--f", uf[1]); } else { r.style.removeProperty("--f-ui"); r.style.removeProperty("--f"); }
+  if (L.ui && L.ui !== 1) r.style.setProperty("--ui", String(L.ui)); else r.style.removeProperty("--ui");
   r.dataset.motion = L.motion ? "on" : "off";
   r.style.setProperty("--ts", String(L.ts * (L.style === "contrast" ? 1.12 : 1)));
-  document.body.classList.toggle("sticky", L.notes !== "flat");
+  document.body.classList.toggle("sticky", L.notes !== "flat"); document.body.classList.toggle("tilt", L.notes === "tilted"); document.body.classList.toggle("nopaper", L.paper === false);
   const nf = L.noteFont === "auto" && L.notes !== "flat" && !["studio", "paper", "chalk"].includes(L.style) ? NOTE_FONTS.hand : (NOTE_FONTS[L.noteFont] || NOTE_FONTS.auto); if (nf[1]) { r.style.setProperty("--f-note", nf[1]); r.style.setProperty("--note-k", nf[2]); } else { r.style.removeProperty("--f-note"); r.style.removeProperty("--note-k"); }
   const pt = PATS[L.pat] || PATS.auto; if (pt[1]) { r.style.setProperty("--pat", pt[1]); r.style.setProperty("--pat-size", pt[2]); } else { r.style.removeProperty("--pat"); r.style.removeProperty("--pat-size"); }
   r.style.setProperty("--edge-w", String(L.edgeW));
-  const after = [r.dataset.style, r.style.cssText, LOOK.edges, LOOK.edgeW, document.body.classList.contains("sticky")].join("|");
+  const after = [r.dataset.style, r.style.cssText, LOOK.edges, LOOK.edgeW, document.body.classList.contains("sticky"), document.body.classList.contains("tilt")].join("|");
   if (rerender) { if (B.doc && after !== before) { B.renderAll(); PW.map.relayoutAll(false); setTimeout(() => B.renderEdges(), 120); } PW.figRedraw(); B.renderEdges(); PW.drawMini && PW.drawMini(); }
   // fonts load lazily; once a new one arrives the cards change size
   if (document.fonts && document.fonts.status !== "loaded") document.fonts.ready.then(() => { if (B.doc) { B.renderEdges(); PW.map.relayoutAll(false); } });
@@ -54,7 +64,7 @@ function preview(st, dark) {
 }
 LOOK.dialog = function () {
   const scopeChk = h("input", { type: "checkbox" }); scopeChk.checked = !!boardLook();
-  const body = h("div", { style: { display: "grid", gap: "12px", width: "min(640px,calc(100vw - 50px))" } });
+  const body = h("div", { class: "lookdlg", style: { display: "grid", gap: "12px", width: "min(700px,calc(100vw - 50px))" } });
   const draw = () => {
     const L = LOOK.resolve(), dark = document.documentElement.dataset.theme === "dark", sc = scopeChk.checked; body.innerHTML = "";
     const grid = h("div", { class: "looks" });
@@ -65,15 +75,36 @@ LOOK.dialog = function () {
     const ts = h("input", { type: "range", min: "0.85", max: "1.5", step: "0.05", value: String(L.ts), style: { width: "180px" } }), tsv = h("span", { class: "mono", text: Math.round(L.ts * 100) + "%" });
     ts.oninput = () => { tsv.textContent = Math.round(ts.value * 100) + "%"; }; ts.onchange = () => LOOK.set({ ts: +ts.value });
     const mo = h("input", { type: "checkbox" }); mo.checked = L.motion; mo.onchange = () => LOOK.set({ motion: mo.checked });
-    body.append(grid, h("div", { class: "opts" },
-      h("span", { text: "light / dark" }), FIXED_DARK.has(L.style) ? h("span", { text: "always dark", style: { opacity: .7 } }) : seg("theme", [["auto", "auto"], ["light", "light"], ["dark", "dark"]], false),
-      h("span", { text: "text size" }), h("div", { class: "seg", style: { alignItems: "center", gap: "8px" } }, ts, tsv),
-      h("span", { text: "notes" }), seg("notes", [["sticky", "sticky notes"], ["flat", "flat cards"]], true),
-      h("span", { text: "note font" }), sel("noteFont", NOTE_FONTS, true),
-      h("span", { text: "background" }), sel("pat", PATS, true),
-      h("span", { text: "map branches" }), h("div", { class: "seg" }, seg("edges", [["elbow", "elbow"], ["curved", "curved"], ["straight", "straight"]], true), h("span", { style: { width: "10px" } }), seg("edgeW", [[.7, "thin"], [1, "normal"], [1.6, "thick"]], true)),
-      h("span", { text: "animation" }), h("label", { style: { display: "flex", gap: "6px", alignItems: "center" } }, mo, "on"),
-      h("span", { text: "" }), h("label", { style: { display: "flex", gap: "6px", alignItems: "center" } }, scopeChk, "only this board" + (B.doc ? " (" + (B.doc.name || "") + ")" : ""))));
+    const chk = (key, label) => { const c = h("input", { type: "checkbox" }); c.checked = !!L[key]; c.onchange = () => LOOK.set({ [key]: c.checked }); return h("label", { class: "ck" }, c, label); };
+    const acc = h("div", { class: "seg acc" }, [["style", null]].concat(Object.entries(ACCENTS)).map(([k, c]) => { const b = h("button", { type: "button", class: "b sw-a", title: k === "style" ? "from the style" : k, "aria-pressed": String(L.accent === k), style: c ? { background: dark ? c[1] : c[0] } : {} }, k === "style" ? "style" : ""); b.onclick = () => { LOOK.set({ accent: k }, sc); draw(); }; return b; }));
+    const tl = ls.get("tools", "top"), tools = h("div", { class: "seg" }, [["top", "top"], ["bottom", "bottom"], ["left", "left"]].map(([v, l]) => { const b = h("button", { type: "button", class: "b", "aria-pressed": String(tl === v) }, l); b.onclick = () => { ls.set("tools", v); PW.tools && PW.tools.build(); draw(); }; return b; }));
+    const cb = h("input", { type: "checkbox" }); cb.checked = ls.get("ctxbar", "1") === "1"; cb.onchange = () => { ls.set("ctxbar", cb.checked ? "1" : "0"); PW.ctxSoon && PW.ctxSoon(); };
+    const G = (title, ...rows) => h("div", { class: "lgrp" }, h("div", { class: "lh", text: title }), h("div", { class: "opts" }, ...rows));
+    body.append(grid,
+      G("light and dark",
+        h("span", { text: "mode" }), FIXED_DARK.has(L.style) ? h("span", { text: "this style is always dark", style: { opacity: .7 } }) : seg("theme", [["auto", "like Windows"], ["light", "light"], ["dark", "dark"]], false),
+        h("span", { text: "dark mode" }), seg("shade", [["deep", "deep"], ["soft", "softer, less dark"]], false)),
+      G("colours and shapes",
+        h("span", { text: "highlight colour" }), acc,
+        h("span", { text: "corners" }), seg("corners", [["style", "style"], ["square", "square"], ["round", "rounded"]], true),
+        h("span", { text: "background" }), sel("pat", PATS, true)),
+      G("text",
+        h("span", { text: "text on the board" }), h("div", { class: "seg", style: { alignItems: "center", gap: "8px" } }, ts, tsv),
+        h("span", { text: "menus and bars" }), seg("ui", [[1, "normal"], [1.15, "large"], [1.3, "larger"]], false),
+        h("span", { text: "menu font" }), sel("uiFont", UI_FONTS, false)),
+      G("notes",
+        h("span", { text: "notes look like" }), seg("notes", [["sticky", "sticky, straight"], ["tilted", "sticky, tilted"], ["flat", "flat cards"]], true),
+        h("span", { text: "paper look" }), seg("paper", [[true, "shading and folded corner"], [false, "plain colour"]], true),
+        h("span", { text: "note font" }), sel("noteFont", NOTE_FONTS, true),
+        h("span", { text: "new notes" }), seg("noteW", [["s", "small"], ["m", "medium"], ["l", "large"]], false)),
+      G("maps",
+        h("span", { text: "branches" }), seg("edges", [["elbow", "elbow"], ["curved", "curved"], ["straight", "straight"]], true),
+        h("span", { text: "line thickness" }), seg("edgeW", [[.7, "thin"], [1, "normal"], [1.6, "thick"]], true)),
+      G("tools",
+        h("span", { text: "tool bar" }), tools,
+        h("span", { text: "" }), h("label", { class: "ck" }, cb, "bar next to the selection"),
+        h("span", { text: "" }), chk("motion", "animations")),
+      h("label", { class: "ck scope" }, scopeChk, "use these looks only for this board" + (B.doc ? " (" + (B.doc.name || "") + ")" : "")));
   };
   scopeChk.onchange = () => { if (!scopeChk.checked) LOOK.clearBoard(); else { const g = globalLook(), cur = {}; BOARD_KEYS.forEach(k => cur[k] = g[k]); LOOK.set(cur, true); } draw(); };
   draw();

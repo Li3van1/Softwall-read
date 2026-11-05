@@ -2,6 +2,8 @@
 // pinwand · tool layouts (top bar, bottom bar, left bar) and the small bar next to a selection
 const I = {
   note: '<path d="M5 4h14v11l-5 5H5z"/><path d="M14 20v-5h5"/>',
+  heading: '<path d="M5 5v14M14 5v14M5 12h9"/><path d="M17 10l2-1v10"/>',
+  outline: '<path d="M4 6h10M7 11h10M7 16h8M4 6v0"/><circle cx="4" cy="11" r=".8" fill="currentColor"/><circle cx="4" cy="16" r=".8" fill="currentColor"/>',
   def: '<rect x="3" y="5" width="18" height="14" rx="1"/><path d="M10 5v14M13 10h5M13 14h4"/>',
   q: '<rect x="3" y="4" width="18" height="16" rx="1"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .8-1 1.5v.7"/><circle cx="12" cy="17" r=".6" fill="currentColor"/>',
   node: '<rect x="8" y="9.5" width="8" height="5" rx="1"/><path d="M16 12h2M18 7v10M18 7h2M18 17h2M6 12H4"/>',
@@ -27,16 +29,17 @@ const I = {
   trash: '<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/>',
   dup: '<rect x="8" y="8" width="12" height="12" rx="1"/><path d="M4 16V4h12"/>',
   front: '<rect x="4" y="4" width="10" height="10"/><rect x="10" y="10" width="10" height="10" fill="currentColor" fill-opacity=".25"/>',
+  pen: '<path d="M4 20l1-4L16 5l3 3L8 19z"/><path d="M14 7l3 3"/>',
   more: '<circle cx="5" cy="12" r="1.3" fill="currentColor"/><circle cx="12" cy="12" r="1.3" fill="currentColor"/><circle cx="19" cy="12" r="1.3" fill="currentColor"/>',
 };
 const svgI = n => `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${I[n] || ""}</svg>`;
 PW.icon = svgI;
 const NOTE_COLS = ["yellow", "green", "blue", "pink", "grey", "white"];
 const TOOLS = [
-  ["new-note", "note", "Note (N)"], ["new-def", "def", "Definition (D)"], ["new-q", "q", "Question (Q)"], ["new-node", "node", "Map (M)"], ["new-table", "table", "Table (T)"],
-  ["new-frame", "frame", "Frame (F)"], ["new-matrix", "matrix", "2×2 matrix"], ["add-list", "list", "From a list"], ["insert-file", "file", "PDF or picture (I)"], ["new-fig-flow", "fig", "Live figure"], ["new-html", "html", "HTML block"], ["link", "arrow", "Arrow (L)"],
+  ["new-note", "note", "Note (N)"], ["heading", "heading", "Heading (H)"], ["new-def", "def", "Definition (D)"], ["new-q", "q", "Question (Q)"], ["new-node", "node", "Map (M)"], ["new-table", "table", "Table (T)"],
+  ["new-frame", "frame", "Frame (F)"], ["new-matrix", "matrix", "2×2 matrix"], ["add-list", "list", "From a list"], ["insert-file", "file", "PDF or picture (I)"], ["new-fig-flow", "fig", "Live figure"], ["new-html", "html", "HTML block"], ["link", "arrow", "Arrow (L)"], ["draw-pen", "pen", "Draw: pen, highlighter, shapes, text (B)"],
   "|", "swatches", "|",
-  ["review", "review", "Review (R)"], ["walk", "walk", "Walk (W)"], ["cover", "cover", "Cover definitions (H)"], ["gaps", "gaps", "Gaps (G)"], ["present", "present", "Present (P)"],
+  ["review", "review", "Review (R)"], ["walk", "walk", "Walk (W)"], ["cover", "cover", "Cover definitions (C)"], ["gaps", "gaps", "Gaps (G)"], ["present", "present", "Present (P)"], ["outline", "outline", "Outline (O)"],
   "|", ["undo", "undo", "Undo (Ctrl+Z)"], ["redo", "redo", "Redo (Ctrl+Y)"], ["zoom-out", "zout", "Zoom out (-)"], ["fit", "fit", "Fit (0)"], ["zoom-in", "zin", "Zoom in (+)"], ["search", "search", "Search (/)"],
 ];
 function swatches(vertical) {
@@ -52,7 +55,7 @@ function buildDock() {
   const d = h("div", { id: "dock", class: "bevel " + mode, role: "toolbar" });
   TOOLS.forEach(t => { if (t === "|") return d.append(h("span", { class: "dsep" })); if (t === "swatches") return d.append(swatches(mode === "left"));
     const [id, ic, tip] = t, b = h("button", { type: "button", class: "di", title: tip, "data-cmd": id, html: svgI(ic) }); b.onclick = () => run(id); d.append(b); });
-  document.body.append(d); updDock();
+  document.body.append(d); updDock(); PW.sections && PW.sections.place();
 }
 function updDock() { const d = $("dock"); if (!d) return; d.querySelectorAll("[data-cmd]").forEach(b => { const c = PW.cmds.get(b.dataset.cmd); b.disabled = !!(c && c.enabled && !c.enabled()); if (c && c.check) b.setAttribute("aria-pressed", String(!!c.check())); }); }
 PW.tools = { build: buildDock, upd: updDock };
@@ -71,8 +74,9 @@ function ctxBtn(html, tip, fn, pressed) { const b = h("button", { type: "button"
 function popup(anchor, items, cols = 8) { closePop(); const r = anchor.getBoundingClientRect(); pop = h("div", { class: "bevel ctxpop", style: { left: r.left + "px", top: (r.bottom + 4) + "px", gridTemplateColumns: `repeat(${cols},auto)` } }); items.forEach(x => pop.append(x)); document.body.append(pop); }
 function drawCtx() {
   ctx.innerHTML = ""; closePop();
-  const sel = B.selected(), show = ls.get("ctxbar", "1") === "1" && sel.length && !PW.present.on && !PW.study.walking() && !document.body.classList.contains("dragging");
+  const sel = B.selected(), lk = !sel.length && B.selLink && B.doc && B.doc.links.find(l => l.id === B.selLink), show = ls.get("ctxbar", "1") === "1" && (sel.length || lk) && !PW.present.on && !PW.study.walking() && !document.body.classList.contains("dragging");
   if (!show) { ctx.hidden = true; return; }
+  if (lk) { PW.draw.linkCtx(ctx, lk, ctxBtn, ctxSoon); ctx.hidden = false; placeCtx(); return; }
   const notes = sel.filter(o => o.type === "note"), nodes = sel.filter(o => o.type === "node"), tree = sel.filter(o => PW.map.inTree(o) || o.type === "node");
   if (notes.length) {
     NOTE_COLS.concat("none").forEach(c => ctx.append(ctxBtn("", c, () => { notes.forEach(o => { o.color = c; if (c !== "none" && o.style) delete o.style; B.render(o); }); B.commit(); ctxSoon(); }, notes.every(o => (o.color || "yellow") === c))));
@@ -92,13 +96,14 @@ function drawCtx() {
     LAYS.forEach(([m, l, t]) => ctx.append(ctxBtn(l, "map: " + t, () => { PW.map.setLayout(tree[0], m); ctxSoon(); }, lay === m)));
     ctx.append(h("span", { class: "dsep" }));
   }
+  PW.draw && PW.draw.ctxItems(sel, ctx, ctxBtn, ctxSoon);
   if (sel.length === 1) ctx.append(ctxBtn(svgI("arrow"), "arrow from here (L)", () => run("link")));
   ctx.append(ctxBtn(svgI("dup"), "duplicate (Ctrl+D)", () => run("dup")), ctxBtn(svgI("front"), "to front", () => run("front")), ctxBtn(svgI("trash"), "delete (Del)", () => run("delete")));
   ctx.hidden = false; placeCtx();
 }
 function placeCtx() {
-  if (ctx.hidden) return; const sel = B.selected(); if (!sel.length) { ctx.hidden = true; return; }
-  const b = B.bounds(sel); if (!b) { ctx.hidden = true; return; } const r = vp.getBoundingClientRect(), z = B.view.z;
+  if (ctx.hidden) return; const sel = B.selected(), m = !sel.length && B.selLink && PW.draw && PW.draw.linkMid(B.selLink);
+  const b = sel.length ? B.bounds(sel) : m ? { x0: m.x - 30, x1: m.x + 30, y0: m.y - 16, y1: m.y + 16 } : null; if (!b) { ctx.hidden = true; return; } const r = vp.getBoundingClientRect(), z = B.view.z;
   const x0 = r.left + B.view.x + b.x0 * z, x1 = r.left + B.view.x + b.x1 * z, y0 = r.top + B.view.y + b.y0 * z, y1 = r.top + B.view.y + b.y1 * z, w = ctx.offsetWidth, hh = ctx.offsetHeight;
   let top = y0 - hh - 10; if (top < r.top + 4) top = y1 + 10; if (top + hh > r.bottom - 4) top = Math.max(r.top + 4, Math.min(r.bottom - hh - 4, y0 + 8));
   const left = clamp((x0 + x1) / 2 - w / 2, r.left + 4, r.right - w - 4);

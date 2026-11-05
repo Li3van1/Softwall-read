@@ -1,6 +1,6 @@
 "use strict";
 // pinwand · shared helpers
-const PW = window.PW = {};
+const PW = window.PW = { APP: 12 }; // the version of pinwand; boards remember which version saved them
 const $ = id => document.getElementById(id);
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const escHTML = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -34,12 +34,18 @@ function mathHTML(src) {
     txt += src.slice(i, m.index).replace(/[\u0001\u0002]/g, "") + "\u0001" + parts.length + "\u0002"; parts.push(out); i = re.lastIndex;
   }
   txt += src.slice(i).replace(/[\u0001\u0002]/g, "");
-  const html = inlineMd(txt).replace(/\u0001(\d+)\u0002/g, (_, k) => parts[+k]);
+  let html = inlineMd(txt);
+  // lists: "- item" becomes a bullet, "- [ ] task" a box you can tick
+  if (/(^|\n)\s*[-*•] /.test(html)) { let k = 0, prevBlock = false;
+    html = html.split("\n").map((ln, i) => { const m = /^(\s*)[-*•] (?:\[([ xX])\] )?(.*)$/.exec(ln); let out, blk = false;
+      if (m) { blk = true; const ind = Math.min(4, Math.floor(m[1].replace(/\t/g, "  ").length / 2)); out = m[2] != null ? `<span class="bl ckl${/x/i.test(m[2]) ? " done" : ""}" style="--ind:${ind}"><span class="ck" data-k="${k++}">${/x/i.test(m[2]) ? "☑" : "☐"}</span>${m[3]}</span>` : `<span class="bl" style="--ind:${ind}">${m[3]}</span>`; }
+      else out = ln; const sep = i === 0 ? "" : (prevBlock || blk) ? "" : "\n"; prevBlock = blk; return sep + out; }).join(""); }
+  html = html.replace(/\u0001(\d+)\u0002/g, (_, k) => parts[+k]);
   if (mathCache.size > 5000) mathCache.clear(); mathCache.set(src, html); return html;
 }
 function setRich(el, src) { src = String(src ?? ""); if (el._src === src) return; el._src = src; el.innerHTML = mathHTML(src); }
 function texPlain(s) {
-  return String(s ?? "").replace(/\$\$?([^$]*)\$\$?/g, (_, t) => t.replace(/\\(dot|ddot|mathbf|mathrm|text|operatorname)\{([^}]*)\}/g, "$2").replace(/\\([a-zA-Z]+)/g, (m, w) => ({ alpha: "α", beta: "β", gamma: "γ", delta: "δ", Delta: "Δ", epsilon: "ε", varepsilon: "ε", lambda: "λ", mu: "μ", omega: "ω", theta: "θ", tau: "τ", pi: "π", sigma: "σ", phi: "φ", to: "→", infty: "∞", le: "≤", ge: "≥", ne: "≠", pm: "±", cdot: "·", times: "×", approx: "≈", in: "∈", mathbb: "" }[w] ?? "")).replace(/[{}^_]/g, "")).replace(/\*\*|__/g, "").replace(/\s+/g, " ").trim();
+  return String(s ?? "").replace(/\$\$?([^$]*)\$\$?/g, (_, t) => t.replace(/\\(dot|ddot|mathbf|mathrm|text|operatorname)\{([^}]*)\}/g, "$2").replace(/\\([a-zA-Z]+)/g, (m, w) => ({ alpha: "α", beta: "β", gamma: "γ", delta: "δ", Delta: "Δ", epsilon: "ε", varepsilon: "ε", lambda: "λ", mu: "μ", omega: "ω", theta: "θ", tau: "τ", pi: "π", sigma: "σ", phi: "φ", to: "→", infty: "∞", le: "≤", ge: "≥", ne: "≠", pm: "±", cdot: "·", times: "×", approx: "≈", in: "∈", mathbb: "" }[w] ?? "")).replace(/[{}^_]/g, "")).replace(/\*\*|__/g, "").replace(/(^|[\s(])\*([^*\s][^*\n]*?)\*(?=[\s.,;:!?)]|$)/g, "$1$2").replace(/(^|\n)\s*[-*•] \[[xX]\] /g, "$1☑ ").replace(/(^|\n)\s*[-*•] \[ \] /g, "$1☐ ").replace(/\s+/g, " ").trim();
 }
 
 // ---- toast, dialogs ----

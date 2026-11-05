@@ -4,12 +4,12 @@ PINWAND — install and update
 INSTALL (once, about 5 minutes)
 
 1. Unzip pinwand-app.zip. You get a folder "pinwand".
-2. Open github.com, go to your repository "softwall".
+2. Open github.com, go to your repository "Softwall-read".
 3. Click "Add file" > "Upload files".
 4. Drag the whole "pinwand" FOLDER (not its contents) into the
    upload area. Click "Commit changes".
 5. Wait 1-2 minutes. Then open in Edge:
-      https://li3van1.github.io/softwall/pinwand/
+      https://li3van1.github.io/Softwall-read/pinwand-app/pinwand/
 6. Edge address bar: click the "App available" icon (or
    ... > Apps > Install this site as an app). Name: pinwand.
 7. First start: click "choose folder…" and pick (or create) a
@@ -25,33 +25,123 @@ BRING YOUR OLD BOARD
    pictures and review progress come along. Reading columns
    are left out; each old section becomes a frame.
 
-OPEN PDFs WITH PINWAND
-   Right-click a PDF > Open with > Choose another app > pinwand.
-   The PDF lands on the board you have open.
+READING PDFs (pinwand now includes the PDF reader)
+   File > Read a PDF… (Ctrl+Shift+O) or the start page opens a
+   PDF in its own tab next to your boards. 1/2/3/4/6 columns,
+   Shift+1…6 also set the columns, S one page, G back,
+   chapters (i), search (/ or Ctrl+F), night mode (n),
+   double-click a page = that page alone. Select text: note,
+   definition, question or branch goes onto your open board with
+   a page link; clicking the link opens the PDF at that page.
+   "→ board" puts the whole PDF on the board as a window; on the
+   board, the "read" button of a PDF (or a double-click on a
+   page) opens it in the reader.
+   The PDF window on the board works like pdfgrid: drag its
+   corner to make it bigger or smaller; click it once, then the
+   wheel scrolls its pages, Shift+1…6 sets the columns, + − 0
+   zoom, ← → PgUp PgDn turn pages, S one page, G all pages,
+   Enter opens the reader. Ctrl+wheel still zooms the board. Recently read PDFs are on the start page and in
+   PDF > Recent PDFs.
+   Right-click a PDF > Open with > Choose another app > pinwand
+   opens it in the reader. pdfgrid still works on its own.
 
 SAVING
    Autosave writes about a second after every change. Ctrl+S saves by
    hand and also writes a backup (the last 40 are kept in
-   the folder "backups"). File > Restore a backup… goes back.
+   the folder "backups"). File > Backups… goes back.
    File > Autosave switches autosave off if you want only
    manual saving.
 
 UPDATE (when you get a new version)
-1. In the repository open the folder "pinwand".
+1. In the repository open the folder "pinwand-app/pinwand".
 2. "Add file" > "Upload files", drag in all files and folders
    from the new "pinwand" folder (same names = replaced).
-   Commit.
-3. Open the app once with internet. It picks up the new
-   version after one restart (close and open it again).
-   Your boards are not touched: they are in your own folder.
+   Commit, and wait until GitHub shows a green tick (1-3 min).
+3. Open the app with internet, wait a few seconds, close it,
+   open it again. That's all: your boards are not touched.
+   (If it still looks old once: Ctrl+Shift+R in the app.)
 
-   If you change files yourself: in sw.js raise the number in
-   CACHE = "pinwand-v1" (v2, v3, …), otherwise the app keeps
-   the old files.
+SAVING SOMEWHERE ELSE
+   File > Save as… makes a copy under a new name.
+   File > Save to a file… writes ONE .pinwand file with all
+   PDFs and pictures inside (USB stick, e-mail, other PC).
+   File > Open a file… (or double-click a .pinwand file)
+   opens it again.
+
+DRAWING
+   Draw (B) opens the drawing bar: pen, highlighter (Shift+B),
+   eraser (E), rectangle / ellipse / line / arrow (S switches),
+   text (X); colours and three widths. Esc goes back to
+   selecting. Lines drawn on a picture move with it.
+   On PDF pages (in the reader and on the board) pen,
+   highlighter and eraser work too; select text and click a
+   colour to highlight it. Marks belong to the PDF and show
+   wherever it is open; "marked" under the chapters (I) lists
+   them. Ctrl+Z takes back the last line or mark.
+   The side panel of the reader (☰ or I) has three tabs:
+   chapters, pages (small pictures of every page, a dot where
+   something is marked) and marked (every highlight and drawn
+   line; the colours above the list filter it).
+   With a stylus (Surface pen etc.) the pen always writes,
+   thicker when you press harder; its eraser end erases; the
+   finger and the mouse select and move. Draw > "A stylus
+   always writes" switches this off.
+   An arrow or line drawn from one item to another becomes a
+   connection that follows both items when they move.
+   Arrows between items: click one for curved / straight,
+   heads, dashed, width, colour; click it again to write a
+   label on it.
+   Insert > Lecture page… makes a frame with headings,
+   definitions, a map, questions and notes for one lecture.
+
+READING AND COLLECTING SIDE BY SIDE
+   In the reader, ⇆ (or PDF > Board beside the PDF) shows the
+   board on the left and the PDF on the right. Cards you make
+   from selected text appear on the left right away. Keys go
+   to the side you clicked last.
+
+LEARNING
+   The start page (Ctrl+O) shows what is due today, for the
+   whole board and for every lecture and heading; a click
+   starts the review of just that part.
+   File > Export cards for Anki… writes a text file that Anki
+   imports (File > Import in Anki); formulas come along.
+   File > Print or save a section as PDF… (Ctrl+P) makes a
+   clean page of one lecture or heading: definitions,
+   questions, notes, tables and the map as a list.
+
+FIND AND REPLACE
+   / or Ctrl+F searches the board and all PDF pages; the
+   buttons narrow it to definitions, questions, notes, map,
+   tables or PDF pages. Ctrl+H: replace in the whole board
+   (Ctrl+Z undoes it).
+
+KEEPING YOUR WORK SAFE
+   If a board was changed in another pinwand window or on another
+   computer (e.g. through OneDrive) while it was open here,
+   nothing is overwritten: this window keeps saving into a copy
+   "… (this window 08:15)" and both stay in the tabs.
+   The same board open in two windows: both windows say so.
+   If saving fails (e.g. the folder permission is gone), a red
+   bar says "not saved" with "try again".
+   Marks on PDFs: a copy of all of them is kept each day you mark
+   something (File > Restore the marks on PDFs…).
+   Workspace… > choose another folder: pinwand offers to copy all
+   boards, PDFs, marks and backups there. Boards in "app storage"
+   live only inside the browser; the start page reminds you.
+   Delete the old pinwand copy in the PinCanvas repository: it
+   runs on the same address, shares your boards and would save
+   them the old way.
+
+BACKUPS
+   File > Backups… shows each backup with what would come
+   back, what would go and what changed, before restoring.
 
 KEYS
    Help > Keys (F1). Everything is also in the menus and in
    Ctrl+K (type a few letters of any command).
+   German keyboard: [ ] (AltGr+8/9) switch tabs, Shift+0 fits
+   the selection, / (Shift+7) searches.
 
 CONTENT FROM ELSEWHERE
    FORMAT.md describes the board format. Content made in that

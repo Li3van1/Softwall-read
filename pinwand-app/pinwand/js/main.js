@@ -20,14 +20,16 @@ cmd({ id: "import-old", menu: "File", label: "Import old course board…", run: 
 cmd({ id: "save", menu: "File", label: "Save", key: "Ctrl+S", enabled: has, run: () => save(true), sep: true });
 cmd({ id: "autosave", menu: "File", label: "Autosave", check: () => ls.get("autosave", "1") === "1", run: () => { ls.set("autosave", ls.get("autosave", "1") === "1" ? "0" : "1"); updSave(); } });
 cmd({ id: "backups", menu: "File", label: "Restore a backup…", enabled: has, run: () => backupsDlg() });
-cmd({ id: "export", menu: "File", label: "Export a copy…", enabled: has, run: () => exportCopy() });
+cmd({ id: "save-as", menu: "File", label: "Save as…", key: "Ctrl+Shift+S", enabled: has, run: () => saveAs() });
+cmd({ id: "save-file", menu: "File", label: "Save to a file…", enabled: has, run: () => saveToFile() });
+cmd({ id: "open-file", menu: "File", label: "Open a file…", run: () => openFileDlg() });
 cmd({ id: "workspace", menu: "File", label: "Workspace folder…", run: () => workspaceDlg(true), sep: true });
 // edit
 cmd({ id: "undo", menu: "Edit", label: "Undo", key: "Ctrl+Z", enabled: () => B.hist.length > 1, run: () => B.undo() });
 cmd({ id: "redo", menu: "Edit", label: "Redo", key: "Ctrl+Y", enabled: () => B.redo.length > 0, run: () => B.redoIt() });
 cmd({ id: "cut", menu: "Edit", label: "Cut", key: "Ctrl+X", enabled: () => B.sel.size > 0, run: () => B.copy(true), sep: true });
 cmd({ id: "copy", menu: "Edit", label: "Copy", key: "Ctrl+C", enabled: () => B.sel.size > 0, run: () => B.copy(false) });
-cmd({ id: "dup", menu: "Edit", label: "Duplicate (palace copy)", key: "Ctrl+D", enabled: () => B.sel.size > 0, run: () => { B.copy(false); const c = B.selected(); B.pasteObjs({ objs: JSON.parse(JSON.stringify(c)), links: [] }, 30, 30, true); } });
+cmd({ id: "dup", menu: "Edit", label: "Duplicate (palace copy)", key: "Ctrl+D", enabled: () => B.sel.size > 0, run: () => { B.copy(false); const c = B.selected(), ids = new Set(c.map(o => o.id)); all().forEach(o => { if (o.on && ids.has(o.on) && !ids.has(o.id)) c.push(o); }); B.pasteObjs({ objs: JSON.parse(JSON.stringify(c)), links: [] }, 30, 30, true); } });
 cmd({ id: "delete", menu: "Edit", label: "Delete", key: "Del", enabled: () => B.sel.size > 0 || !!B.selLink, run: () => { if (B.selLink) { B.doc.links = B.doc.links.filter(l => l.id !== B.selLink); B.selLink = null; B.renderEdges(); B.commit(); B.updSel(); return; } B.remove([...B.sel]); } });
 cmd({ id: "selall", menu: "Edit", label: "Select all", key: "Ctrl+A", run: () => B.select(all().filter(o => !PW.map.isHidden(o)).map(o => o.id)) });
 cmd({ id: "edit", menu: "Edit", label: "Edit text", key: "F2", enabled: () => !!sel1(), run: () => B.edit(sel1()), sep: true });
@@ -39,7 +41,7 @@ cmd({ id: "bg", menu: "Edit", label: "Picture as background", enabled: () => B.s
 cmd({ id: "front", menu: "Edit", label: "Bring to front", enabled: () => B.sel.size > 0, run: () => { B.toFront([...B.sel]); B.commit(); } });
 function setStyle(s) { B.selected().forEach(o => { if (o.type === "note") { o.style = s; if (s) o.color = "none"; B.render(o); } }); B.commit(); }
 // insert
-cmd({ id: "new-note", menu: "Insert", label: "Note", key: "N", enabled: has, run: p => { p = at(p); B.add({ type: "note", x: Math.round(p.x), y: Math.round(p.y), w: document.body.classList.contains("sticky") ? 200 : 240, text: "", color: ls.get("noteColor", "yellow") }, { edit: "text" }); } });
+cmd({ id: "new-note", menu: "Insert", label: "Note", key: "N", enabled: has, run: p => { p = at(p); B.add({ type: "note", x: Math.round(p.x), y: Math.round(p.y), w: PW.noteW ? PW.noteW() : 220, text: "", color: ls.get("noteColor", "yellow") }, { edit: "text" }); } });
 cmd({ id: "new-def", menu: "Insert", label: "Definition", key: "D", enabled: has, run: p => { p = at(p); B.add({ type: "def", x: Math.round(p.x), y: Math.round(p.y), w: 380, term: "", def: "" }, { edit: "term" }); } });
 cmd({ id: "new-q", menu: "Insert", label: "Question", key: "Q", enabled: has, run: p => { p = at(p); B.add({ type: "q", x: Math.round(p.x), y: Math.round(p.y), w: 380, qt: "concept", q: "", a: "" }, { edit: "q" }); } });
 cmd({ id: "new-node", menu: "Insert", label: "Map: new centre", key: "M", enabled: has, run: p => PW.map.newRoot(at(p)) });
@@ -84,7 +86,7 @@ cmd({ id: "map-outline-out", menu: "Map", label: "Copy as outline", key: "Ctrl+S
 // study
 cmd({ id: "review", menu: "Study", label: "Review", key: "R", enabled: has, run: () => PW.study.review() });
 cmd({ id: "walk", menu: "Study", label: "Walk route / recall map", key: "W", enabled: () => !!sel1(), run: () => PW.study.walk() });
-cmd({ id: "cover", menu: "Study", label: "Cover definitions", key: "H", check: () => document.body.classList.contains("cover"), run: () => PW.study.cover() });
+cmd({ id: "cover", menu: "Study", label: "Cover definitions", key: "C", check: () => document.body.classList.contains("cover"), run: () => PW.study.cover() });
 // view
 cmd({ id: "fit", menu: "View", label: "Fit all", key: "0", enabled: has, run: () => B.fit(all(), 1.2) });
 cmd({ id: "fit-sel", menu: "View", label: "Fit selection", key: "Shift+0", enabled: () => B.sel.size > 0, run: () => B.fit(B.selected(), 2) });
@@ -92,7 +94,7 @@ cmd({ id: "zoom-in", menu: "View", label: "Zoom in", key: "+", run: () => B.zoom
 cmd({ id: "zoom-out", menu: "View", label: "Zoom out", key: "-", run: () => B.zoomAt(1 / 1.25) });
 cmd({ id: "zoom-100", menu: "View", label: "100 %", key: "1", run: () => B.zoomAt(1 / B.view.z), sep: true });
 cmd({ id: "overview", menu: "View", label: "Overview", key: "V", check: () => !$("minimap").hidden, run: () => { $("minimap").hidden = !$("minimap").hidden; ls.set("minimap", $("minimap").hidden ? "0" : "1"); drawMini(); } });
-cmd({ id: "chrome", menu: "View", label: "Hide menus", key: "Ctrl+.", check: () => document.body.classList.contains("nochrome"), run: () => { document.body.classList.toggle("nochrome"); $("chromeToggle").textContent = document.body.classList.contains("nochrome") ? "▼" : "▲"; } });
+cmd({ id: "chrome", menu: "View", label: "Hide menus", key: "Ctrl+.", check: () => document.body.classList.contains("nochrome"), run: () => { document.body.classList.toggle("nochrome"); $("chromeToggle").textContent = document.body.classList.contains("nochrome") ? "▼" : "▲"; PW.sections && PW.sections.place(); } });
 cmd({ id: "invert", menu: "View", label: "Invert PDF pages", check: () => document.body.classList.contains("invertpdf"), run: () => { document.body.classList.toggle("invertpdf"); ls.set("invert", document.body.classList.contains("invertpdf") ? "1" : "0"); }, sep: true });
 PW.look.STYLES.forEach(([id, name]) => cmd({ id: "style-" + id, menu: "View", sub: "Style", label: name, check: () => PW.look.style === id, run: () => PW.look.set({ style: id }, !!(B.doc && B.doc.settings && B.doc.settings.look)) }));
 ["auto", "light", "dark"].forEach(t => cmd({ id: "theme-" + t, menu: "View", sub: "Light / dark", label: t, check: () => PW.look.theme === t, run: () => PW.look.set({ theme: t }) }));
@@ -113,24 +115,60 @@ function newFrame() {
 }
 
 // ============ menus ============
-const menubar = $("menubar"); let openMenu = null;
-function hideMenus() { if (openMenu) { openMenu.classList.remove("open"); openMenu.querySelector(".drop").remove(); openMenu = null; } }
+// the open menu lives on top of everything (also above the tool bars), placed under its title
+const menubar = $("menubar"); let openMenu = null, menuEl = null;
+function hideMenus() { if (menuEl) { menuEl._sub && menuEl._sub.remove(); menuEl.remove(); menuEl = null; } if (openMenu) { openMenu.classList.remove("open"); openMenu = null; } }
 PW.hideMenus = hideMenus; window.hideMenus = hideMenus;
+const MENUS = ["File", "Edit", "Insert", "Draw", "Table", "Map", "Study", "PDF", "View", "Help"];
 function buildMenus() {
-  const order = ["File", "Edit", "Insert", "Table", "Map", "Study", "View", "Help"]; menubar.innerHTML = "";
-  order.forEach(m => { const mi = h("div", { class: "mi" }), b = h("button", { type: "button" }, h("u", { text: m[0] }), m.slice(1)); mi.append(b);
+  menubar.innerHTML = "";
+  MENUS.forEach(m => { const mi = h("div", { class: "mi", "data-m": m }), b = h("button", { type: "button", "aria-haspopup": "true" }, h("u", { text: m[0] }), m.slice(1)); mi.append(b);
     b.addEventListener("click", e => { e.stopPropagation(); if (openMenu === mi) { hideMenus(); return; } hideMenus(); openDrop(mi, m); });
     b.addEventListener("mouseenter", () => { if (openMenu && openMenu !== mi) { hideMenus(); openDrop(mi, m); } }); menubar.append(mi); });
 }
-function openDrop(mi, m) {
-  const d = h("div", { class: "drop bevel" }); const items = [...PW.cmds.values()].filter(c => c.menu === m); const subs = new Map();
-  items.forEach(c => { if (c.sub) { if (!subs.has(c.sub)) { subs.set(c.sub, []); d.append(subBtn(c.sub, subs)); } subs.get(c.sub).push(c); return; } if (c.sep && d.childElementCount) d.append(h("hr")); d.append(itemBtn(c)); });
-  if (m === "File" && B.recent) { const rec = B.recent.filter(r => r !== B.file).slice(0, 5); if (rec.length) { d.append(h("hr")); rec.forEach(r => d.append(h("button", { type: "button", onclick: () => { hideMenus(); openBoard(r); } }, h("span"), h("span", { text: r.replace(/\.pinwand\.json$/, "") }), h("kbd")))); } }
-  mi.append(d); mi.classList.add("open"); openMenu = mi;
+function placeDrop(d, x, y, alt) {
+  document.body.append(d); const w = d.offsetWidth, hh = d.offsetHeight;
+  let L = x, T = y; if (L + w > innerWidth - 4) L = alt != null ? Math.max(4, alt - w) : Math.max(4, innerWidth - w - 4);
+  if (T + hh > innerHeight - 4) T = Math.max(4, innerHeight - hh - 4);
+  d.style.left = L + "px"; d.style.top = T + "px"; d.style.maxHeight = (innerHeight - 8) + "px";
 }
-function itemBtn(c) { const en = !c.enabled || c.enabled(); const b = h("button", { type: "button", disabled: !en }, h("span", { text: c.check ? (c.check() ? "✓" : "") : "" }), h("span", { text: c.label }), h("kbd", { text: c.key || "" })); b.addEventListener("click", e => { e.stopPropagation(); hideMenus(); run(c.id); }); return b; }
-function subBtn(name, subs) { const b = h("button", { type: "button" }, h("span"), h("span", { text: name }), h("kbd", { text: "▸" })); b.addEventListener("click", e => { e.stopPropagation(); const d = b.closest(".drop"); const list = subs.get(name); const box = h("div", { class: "drop bevel", style: { position: "absolute", left: "100%", top: b.offsetTop + "px" } }); list.forEach(c => box.append(itemBtn(c))); d.querySelectorAll(":scope > .drop").forEach(x => x.remove()); d.append(box); }); return b; }
-document.addEventListener("pointerdown", e => { if (!e.target.closest(".mi")) hideMenus(); });
+function openDrop(mi, m, focusFirst) {
+  const d = h("div", { class: "drop mdrop bevel", role: "menu" }); const items = [...PW.cmds.values()].filter(c => c.menu === m && !c.hide); const subs = new Map();
+  items.forEach(c => { if (c.sub) { if (!subs.has(c.sub)) { subs.set(c.sub, []); d.append(subBtn(c.sub, subs)); } subs.get(c.sub).push(c); return; } if (c.sep && d.childElementCount) d.append(h("hr")); d.append(itemBtn(c)); });
+  if (m === "File" && B.recent) { const rec = B.recent.filter(r => r !== B.file).slice(0, 6); if (rec.length) { d.append(h("hr")); rec.forEach(r => d.append(h("button", { type: "button", role: "menuitem", onclick: e => { e.stopPropagation(); hideMenus(); openBoard(r); } }, h("span"), h("span", { text: r.replace(/\.pinwand\.json$/, "") }), h("kbd")))); } }
+  d.addEventListener("mouseover", e => { const b = e.target.closest(".mdrop > button"); if (b && !b.classList.contains("sb")) closeSub(d); });
+  const r = mi.getBoundingClientRect(); placeDrop(d, r.left, r.bottom); menuEl = d; mi.classList.add("open"); openMenu = mi;
+  if (focusFirst) { const f = d.querySelector("button:not(:disabled)"); f && f.focus(); }
+}
+function closeSub(d) { d._sub && d._sub.remove(); d._sub = null; d.querySelectorAll(".sb.on").forEach(x => x.classList.remove("on")); }
+function itemBtn(c) { const en = !c.enabled || c.enabled(); const b = h("button", { type: "button", role: "menuitem", disabled: !en }, h("span", { text: c.check ? (c.check() ? "✓" : "") : "" }), h("span", { text: c.label }), h("kbd", { text: c.key || "" })); b.addEventListener("click", e => { e.stopPropagation(); hideMenus(); run(c.id); }); return b; }
+function subBtn(name, subs) {
+  const b = h("button", { type: "button", class: "sb", "aria-haspopup": "true" }, h("span"), h("span", { text: name }), h("kbd", { text: "▸" }));
+  const open = focus => { const d = b.closest(".mdrop"); if (d._sub && d._subName === name) return; closeSub(d); b.classList.add("on");
+    const box = h("div", { class: "drop mdrop sub bevel", role: "menu" }); subs.get(name).forEach(c => box.append(itemBtn(c)));
+    const r = b.getBoundingClientRect(), dr = d.getBoundingClientRect(); placeDrop(box, dr.right - 2, r.top - 3, dr.left + 2); d._sub = box; d._subName = name;
+    if (focus) { const f = box.querySelector("button:not(:disabled)"); f && f.focus(); } };
+  b.addEventListener("click", e => { e.stopPropagation(); open(true); }); b.addEventListener("mouseenter", () => open(false)); b._open = open; return b;
+}
+document.addEventListener("pointerdown", e => { if (!e.target.closest(".mi,.mdrop")) hideMenus(); });
+addEventListener("resize", () => hideMenus()); addEventListener("blur", () => hideMenus());
+// keyboard: alt+letter opens a menu, arrows move, enter chooses, esc closes
+document.addEventListener("keydown", e => {
+  if (e.altKey && !e.ctrlKey && /^[a-z]$/i.test(e.key) && !document.querySelector(".modal") && !(B.editing)) {
+    const mi = [...menubar.children].find(x => x.dataset.m[0].toLowerCase() === e.key.toLowerCase()); if (mi) { e.preventDefault(); e.stopImmediatePropagation(); if (document.body.classList.contains("nochrome")) run("chrome"); hideMenus(); openDrop(mi, mi.dataset.m, true); return; }
+  }
+  if (!menuEl) return; const k = e.key, inSub = document.activeElement && document.activeElement.closest(".mdrop.sub"), d = inSub ? menuEl._sub : menuEl;
+  if (!["ArrowDown", "ArrowUp", "ArrowLeft", "ArrowRight", "Escape", "Enter", " ", "Home", "End"].includes(k)) return;
+  e.preventDefault(); e.stopImmediatePropagation();
+  const btns = d ? [...d.querySelectorAll(":scope > button:not(:disabled)")] : [], i = btns.indexOf(document.activeElement);
+  if (k === "ArrowDown") (btns[(i + 1) % btns.length] || btns[0]).focus();
+  if (k === "ArrowUp") (btns[(i - 1 + btns.length) % btns.length] || btns[btns.length - 1]).focus();
+  if (k === "Home") btns[0] && btns[0].focus(); if (k === "End") btns[btns.length - 1] && btns[btns.length - 1].focus();
+  if (k === "Enter" || k === " ") { const b = document.activeElement; if (b && b.closest(".mdrop")) { if (b._open) b._open(true); else b.click(); } }
+  if (k === "ArrowRight") { const b = document.activeElement; if (b && b._open) { b._open(true); return; } const all = [...menubar.children], j = all.indexOf(openMenu), nx = all[(j + 1) % all.length]; hideMenus(); openDrop(nx, nx.dataset.m, true); }
+  if (k === "ArrowLeft") { if (inSub) { const sb = menuEl.querySelector(".sb.on"); closeSub(menuEl); sb && sb.focus(); return; } const all = [...menubar.children], j = all.indexOf(openMenu), pv = all[(j - 1 + all.length) % all.length]; hideMenus(); openDrop(pv, pv.dataset.m, true); }
+  if (k === "Escape") { if (inSub) { const sb = menuEl.querySelector(".sb.on"); closeSub(menuEl); sb && sb.focus(); } else { const m = openMenu; hideMenus(); m && m.querySelector("button").focus(); } }
+}, true);
 document.querySelectorAll("[data-cmd]").forEach(b => b.addEventListener("click", () => run(b.dataset.cmd)));
 $("chromeToggle").addEventListener("click", () => run("chrome"));
 $("fileIn").addEventListener("change", e => { const f = [...e.target.files]; e.target.value = ""; if (f.length) PW.files.insert(f, B.center()); });
@@ -139,19 +177,28 @@ $("importIn").addEventListener("change", e => { const f = e.target.files[0]; e.t
 // ============ keys ============
 document.addEventListener("keydown", e => {
   if (document.querySelector(".modal")) return;
+  // AltGr (German and other layouts: [ ] { } \ @) arrives as Ctrl+Alt: it is typing, not a shortcut
+  const altGr = !!(e.getModifierState && e.getModifierState("AltGraph")), CTRL = (e.ctrlKey || e.metaKey) && !altGr, ALT = e.altKey && !altGr;
   if (e.ctrlKey && (e.key === "PageDown" || e.key === "PageUp")) { e.preventDefault(); stepTab(e.key === "PageDown" ? 1 : -1); return; }
-  if (homeOn) { const c = e.ctrlKey || e.metaKey, kk = e.key.toLowerCase();
+  if (homeOn) { const c = CTRL, kk = e.key.toLowerCase();
     if (e.key === "Escape" && B.doc) { e.preventDefault(); hideHome(); return; }
     if (c && kk === "k") { e.preventDefault(); run("palette"); return; } if (c && kk === "o") { e.preventDefault(); return; }
     if (!c && (e.key === "]" || e.key === "[")) { stepTab(e.key === "]" ? 1 : -1); return; }
     return; }
+  if (PW.reader && PW.reader.on && !document.querySelector(".mdrop") && !(document.body.classList.contains("split") && PW.pane === "board")) { const c = CTRL, kk = e.key.toLowerCase();
+    if (!c && !ALT && (e.key === "]" || e.key === "[")) { stepTab(e.key === "]" ? 1 : -1); return; }
+    if (e.target && e.target.matches && e.target.matches("input,textarea,select") && !c) return;
+    if (PW.reader.key(e)) return;
+    if (!(c && ["k", "o", "s", "q", "z", "y", "p"].includes(kk))) return; }
   if (PW.present && PW.present.on && !B.editing && !e.ctrlKey) { if (PW.present.key(e)) { e.preventDefault(); return; } }
   if (PW.study.walking() && !B.editing) { if (PW.study.walkKey(e)) { e.preventDefault(); e.stopPropagation(); } return; }
-  const k = e.key, ctrl = e.ctrlKey || e.metaKey, a = document.activeElement;
-  if (ctrl && k.toLowerCase() === "s") { e.preventDefault(); if (B.editing) B.endEdit(); save(true); return; }
+  const k = e.key, ctrl = CTRL, a = document.activeElement;
+  if (ctrl && k.toLowerCase() === "s") { e.preventDefault(); if (B.editing) B.endEdit(); if (e.shiftKey) { if (B.doc) saveAs(); } else save(true); return; }
   if (B.editing) {
     const o = B.editing.o;
     if (o.type === "table") { if (ctrl && k === "Enter") { e.preventDefault(); PW.table.op(o, e.shiftKey ? "c+" : "r+"); return; } if (e.altKey && k.startsWith("Arrow")) { e.preventDefault(); PW.table.op(o, { ArrowUp: "ru", ArrowDown: "rd", ArrowLeft: "cl", ArrowRight: "cr" }[k]); return; } if (k !== "Escape" && PW.table.key(e)) return; }
+    if (ctrl && !e.shiftKey && (k.toLowerCase() === "b" || k.toLowerCase() === "i")) { e.preventDefault(); wrapSel(k.toLowerCase() === "b" ? "**" : "*"); return; }
+    if (k === "Enter" && !ctrl && !e.shiftKey && !e.altKey && ["note", "def", "q"].includes(o.type) && listEnter()) { e.preventDefault(); return; }
     if (k === "Escape" || (k === "Enter" && ctrl)) { e.preventDefault(); B.endEdit(); vp.focus(); return; }
     if (o.type === "node" || (o.type === "frame")) { if (k === "Enter" && !e.shiftKey) { e.preventDefault(); B.endEdit(); vp.focus(); return; } }
     if (k === "Tab" && (o.type === "node" || PW.map.inTree(o))) { e.preventDefault(); B.endEdit(); const n = e.shiftKey ? PW.map.addSibling(o) : PW.map.addChild(o); B.select([n.id]); B.edit(n); return; }
@@ -161,17 +208,20 @@ document.addEventListener("keydown", e => {
   }
   if (a && a.matches && a.matches("input,textarea,select")) return;
   if (ctrl && k === "Enter" && PW.table.cur()) { e.preventDefault(); run(e.shiftKey ? "tbl-col" : "tbl-row"); return; }
+  if (ctrl && !e.shiftKey && /^[cx]$/i.test(k)) { const sl = getSelection(); if (sl && !sl.isCollapsed && sl.toString().trim()) return; } // copying selected text (e.g. from a PDF) stays a text copy
   if (ctrl) {
-    const m = { z: e.shiftKey ? "redo" : "undo", y: "redo", c: e.shiftKey ? "map-outline-out" : "copy", x: "cut", d: "dup", a: e.shiftKey ? "appearance" : "selall", f: "search", k: "palette", l: "map-tidy", o: "boards", ".": "chrome", g: "new-frame" }[k.toLowerCase()];
+    const m = { z: e.shiftKey ? "redo" : "undo", y: "redo", c: e.shiftKey ? "map-outline-out" : "copy", x: "cut", d: "dup", a: e.shiftKey ? "appearance" : "selall", f: "search", k: "palette", l: "map-tidy", o: e.shiftKey ? "open-pdf" : "boards", ".": "chrome", g: "new-frame", p: "print", h: "replace" }[k.toLowerCase()];
     if (m) { e.preventDefault(); run(m); } return;
   }
-  if (e.altKey && /^[1-7]$/.test(k)) { e.preventDefault(); run("color-" + B.COLORS[+k - 1]); return; }
-  if (e.altKey && k.startsWith("Arrow") && PW.table.cur()) { e.preventDefault(); PW.table.op(PW.table.cur(), { ArrowUp: "ru", ArrowDown: "rd", ArrowLeft: "cl", ArrowRight: "cr" }[k]); return; }
-  if (e.altKey) return;
+  if (ALT && /^[1-7]$/.test(k)) { e.preventDefault(); run("color-" + B.COLORS[+k - 1]); return; }
+  if (ALT && k.startsWith("Arrow") && PW.table.cur()) { e.preventDefault(); PW.table.op(PW.table.cur(), { ArrowUp: "ru", ArrowDown: "rd", ArrowLeft: "cl", ArrowRight: "cr" }[k]); return; }
+  if (ALT) return;
+  if (PW.draw && PW.draw.key(e)) { e.preventDefault(); return; }
   const o = sel1();
+  if (o && o.type === "pdf" && !ALT && PW.pdf.key(e, o)) { e.preventDefault(); return; }
   if (k === " ") { e.preventDefault(); if (o && PW.map.children(o.id).length) { PW.map.toggle(o); return; } PW.keys.space = true; vp.style.cursor = "grab"; return; }
   if (k === "Escape") { if (openMenu) { hideMenus(); return; } if (PW.linkMode) { PW.linkMode = null; vp.style.cursor = ""; document.body.classList.remove("linking"); status(""); return; } if (PW.map.focusId) { PW.map.focus(null); return; } B.sel.clear(); B.selLink = null; B.updSel(); B.renderEdges(); PW.search.close(); return; }
-  if (k === "Delete" || k === "Backspace") { e.preventDefault(); run("delete"); return; }
+  if (k === "Delete" || k === "Backspace") { const sl = getSelection(); if (sl && !sl.isCollapsed && sl.anchorNode && sl.anchorNode.parentElement && sl.anchorNode.parentElement.closest(".textLayer")) return; e.preventDefault(); run("delete"); return; }
   if (k === "F2") { e.preventDefault(); run("edit"); return; }
   if (k === "F1") { e.preventDefault(); run("keys"); return; }
   if (k === "Tab") { e.preventDefault(); if (o) { if (e.shiftKey) run("map-detach"); else run("map-child"); } return; }
@@ -184,15 +234,34 @@ document.addEventListener("keydown", e => {
     const s = 120; B.view.x -= k === "ArrowRight" ? s : k === "ArrowLeft" ? -s : 0; B.view.y -= k === "ArrowDown" ? s : k === "ArrowUp" ? -s : 0; B.applyView(); return; }
   if (k === "/") { e.preventDefault(); run("search"); return; }
   if (k === "]" || k === "[") { stepTab(k === "]" ? 1 : -1); return; }
+  if (k === "PageDown" || k === "PageUp") { e.preventDefault(); PW.sections.step(k === "PageDown" ? 1 : -1); return; }
+  if (e.shiftKey && e.code === "Digit0") { run("fit-sel"); return; } // Shift+0 is "=" on a German keyboard
   if (k === "+" || k === "=") { run("zoom-in"); return; } if (k === "-") { run("zoom-out"); return; }
   if (k === ")" || (k === "0" && e.shiftKey)) { run("fit-sel"); return; }
   if (k === "0") { run("fit"); return; } if (k === "1") { run("zoom-100"); return; }
   if (k === ".") { run("map-focus"); return; }
-  const map = { g: "gaps", p: "present", t: "new-table", n: "new-note", d: "new-def", q: "new-q", m: "new-node", f: "new-frame", i: "insert-file", l: "link", r: "review", w: "walk", h: "cover", v: "overview" }[k.toLowerCase()];
+  const map = { g: "gaps", p: "present", t: "new-table", n: "new-note", d: "new-def", q: "new-q", m: "new-node", f: "new-frame", i: "insert-file", l: "link", s: "draw-shape", x: "draw-text", r: "review", w: "walk", c: "cover", h: "heading", o: "outline", v: "overview" }[k.toLowerCase()];
   if (map && !e.shiftKey) { e.preventDefault(); run(map); }
 });
 const nudgeCommit = debounce(() => B.commit(), 500);
+// with the board beside the PDF, keys go to the side clicked last
+document.addEventListener("pointerdown", e => { const t = e.target; if (!t || !t.closest) return; const p = t.closest("#reader") ? "reader" : t.closest("#viewport,#toolbar,#dock,#ctxbar,#penbar") ? "board" : null; if (p && p !== PW.pane) { PW.pane = p; PW.draw && PW.draw.paneChanged && PW.draw.paneChanged(); } }, true);
 document.addEventListener("keyup", e => { if (e.key === " ") { PW.keys.space = false; vp.style.cursor = ""; } });
+
+// ---- writing helpers: **bold**, *italic*, lists that continue on Enter ----
+function wrapSel(mark) { const sel = getSelection(), t = sel.toString(); document.execCommand("insertText", false, mark + t + mark); if (!t) for (let i = 0; i < mark.length; i++) sel.modify("move", "backward", "character"); }
+function listEnter() {
+  const ed = B.editing, sel = getSelection(); if (!ed || !sel.rangeCount || !sel.isCollapsed) return false;
+  const r = document.createRange(); r.setStart(ed.t, 0); r.setEnd(sel.anchorNode, sel.anchorOffset);
+  const full = ed.t.textContent.replace(/\u00a0/g, " "), pos = r.toString().length, ls0 = full.lastIndexOf("\n", pos - 1) + 1, line = full.slice(ls0, pos);
+  const m = /^(\s*)([-*•]) (\[[ xX]\] )?/.exec(line); if (!m) return false;
+  let txt, caret;
+  if (line.trim() === (m[2] + " " + (m[3] || "")).trim()) { txt = full.slice(0, ls0) + full.slice(pos); caret = ls0; }
+  else { const ins = "\n" + m[1] + m[2] + " " + (m[3] ? "[ ] " : ""); txt = full.slice(0, pos) + ins + full.slice(pos); caret = pos + ins.length; }
+  if (caret === txt.length && txt.endsWith("\n")) txt += "\n"; // a last empty line needs a second break to exist
+  ed.t.textContent = txt; const tn = ed.t.firstChild || ed.t; const rr = document.createRange(); rr.setStart(tn, Math.min(caret, (tn.textContent || "").length)); rr.collapse(true); sel.removeAllRanges(); sel.addRange(rr);
+  ed.t.dispatchEvent(new Event("input", { bubbles: true })); return true;
+}
 
 // ============ boards & saving ============
 B.recent = JSON.parse(ls.get("recent", "[]"));
@@ -201,49 +270,59 @@ const slug = s => (String(s).trim().replace(/[\\/:*?"<>|]+/g, "-").replace(/\s+/
 let tabs = JSON.parse(ls.get("tabs", "[]")); const cache = new Map(); let homeOn = false;
 async function leaveCurrent() {
   if (!B.doc) return; B.endEdit(); if (PW.study.walking()) PW.study.endWalk(); PW.search.close(); hideMenus();
-  if (B.dirty) await save(false); cache.set(B.file, { doc: B.doc, hist: B.hist, redo: B.redo, lastSaved: B.lastSaved });
+  if (B.dirty) await save(false); cache.set(B.file, { doc: B.doc, hist: B.hist, redo: B.redo, lastSaved: B.lastSaved, fileMod: B.fileMod });
 }
 async function openBoard(file) {
-  if (B.doc && B.file === file) { hideHome(); return; }
+  if (B.doc && B.file === file) { PW.reader.hide(); hideHome(); drawTabs(); boardTitle(); return; }
   await leaveCurrent();
   try { const c = cache.get(file);
-    if (c) { B.load(c.doc, file); B.hist = c.hist; B.redo = c.redo; B.lastSaved = c.lastSaved; }
-    else { const doc = await PW.store.readBoard(file); B.load(doc, file); B.lastSaved = null; }
+    if (c) { B.load(c.doc, file); B.hist = c.hist; B.redo = c.redo; B.lastSaved = c.lastSaved; B.fileMod = c.fileMod; }
+    else { const mod = await PW.store.mod(file), doc = await PW.store.readBoard(file); B.load(doc, file); B.lastSaved = null; B.fileMod = mod; }
     afterOpen(); }
   catch (e) { cache.delete(file); tabs = tabs.filter(t => t !== file); saveTabs(); drawTabs(); await alertDlg("open board", "cannot open " + file + "\n" + (e.message || e)); }
 }
 function unloadBoard() { for (const el of [...world.querySelectorAll(".obj")]) el.remove(); svg.innerHTML = ""; B.doc = null; B.file = null; B.sel.clear(); B.dirty = false; PW.look.apply(false); updSave(); PW.study.updDue(); $("sBoard").textContent = "-"; }
 async function closeTab(file) {
   if (!file) return; const i = tabs.indexOf(file);
+  if (file.startsWith("pdf:")) { const asset = file.slice(4), was = PW.reader.on && PW.reader.asset === asset; tabs = tabs.filter(t => t !== file); saveTabs(); PW.reader.close(asset);
+    if (was) { const nx = tabs[Math.min(Math.max(0, i), tabs.length - 1)]; if (nx) await openTab(nx); else if (B.doc) { PW.reader.hide(); boardTitle(); } else { PW.reader.hide(); showHome(); } }
+    drawTabs(); return; }
+  if (file === B.file && PW.reader.on) { await leaveCurrent(); cache.delete(file); tabs = tabs.filter(t => t !== file); saveTabs(); unloadBoard(); drawTabs(); return; }
   if (file === B.file) { await leaveCurrent(); }
   cache.delete(file); tabs = tabs.filter(t => t !== file); saveTabs();
-  if (file === B.file) { const nx = tabs[Math.min(Math.max(0, i), tabs.length - 1)]; if (nx) await openBoard(nx); else { unloadBoard(); showHome(); } }
+  if (file === B.file) { const nx = tabs.filter(t => !t.startsWith("pdf:"))[0] || tabs[Math.min(Math.max(0, i), tabs.length - 1)]; unloadBoard(); if (nx) await openTab(nx); else showHome(); }
   drawTabs();
 }
-function stepTab(d) { if (!tabs.length) return; const i = tabs.indexOf(B.file); openBoard(tabs[((homeOn || i < 0 ? (d > 0 ? -1 : 0) : i) + d + tabs.length) % tabs.length]); }
+function activeTab() { return homeOn ? null : PW.reader && PW.reader.on ? "pdf:" + PW.reader.asset : B.file; }
+function openTab(id) { return id.startsWith("pdf:") ? PW.reader.open(id.slice(4)) : openBoard(id); }
+function stepTab(d) { if (!tabs.length) return; const i = tabs.indexOf(activeTab()); openTab(tabs[((i < 0 ? (d > 0 ? -1 : 0) : i) + d + tabs.length) % tabs.length]); }
+function boardTitle() { if (B.doc) { $("ttl").textContent = "pinwand — " + (B.doc.name || B.file); document.title = (B.doc.name || "pinwand") + " — pinwand"; } }
 const saveTabs = () => ls.set("tabs", JSON.stringify(tabs));
 const nameOf = f => (f === B.file && B.doc ? B.doc.name : cache.get(f) ? cache.get(f).doc.name : null) || f.replace(/\.pinwand\.json$/, "");
 function drawTabs() {
-  const L = $("tabList"); L.innerHTML = "";
-  tabs.forEach(f => { const on = f === B.file && !homeOn, t = h("div", { class: "tab" + (on ? " on" : ""), role: "tab", "aria-selected": String(on), title: nameOf(f) }, h("span", { text: nameOf(f) }), h("button", { class: "x", type: "button", "aria-label": "close", text: "×" }));
-    t.addEventListener("click", e => { if (e.target.closest(".x")) { e.stopPropagation(); closeTab(f); return; } openBoard(f); });
+  const L = $("tabList"); L.innerHTML = ""; const act = activeTab(); if (B.doc || (PW.reader && PW.reader.on)) ls.set("atab", act || "");
+  tabs.forEach(f => { const pdf = f.startsWith("pdf:"), nm = pdf ? PW.reader.nameOf(f.slice(4)) : nameOf(f), on = f === act, t = h("div", { class: "tab" + (on ? " on" : "") + (pdf ? " pdf" : " brd"), role: "tab", "aria-selected": String(on), title: nm }, h("span", { text: nm }), h("button", { class: "x", type: "button", "aria-label": "close", text: "×" }));
+    t.addEventListener("click", e => { if (e.target.closest(".x")) { e.stopPropagation(); closeTab(f); return; } openTab(f); });
     t.addEventListener("auxclick", e => { if (e.button === 1) { e.preventDefault(); closeTab(f); } }); L.append(t); });
   $("tabHome").setAttribute("aria-pressed", String(homeOn)); const on = L.querySelector(".on"); on && on.scrollIntoView({ block: "nearest", inline: "nearest" });
 }
 function setPin(on) { document.body.classList.toggle("pintabs", on); $("tabPin").setAttribute("aria-pressed", String(on)); ls.set("pintabs", on ? "1" : "0"); }
 $("tabPin").onclick = () => setPin(!document.body.classList.contains("pintabs"));
-$("tabHome").onclick = () => homeOn && B.doc ? hideHome() : showHome();
+$("tabHome").onclick = () => homeOn && (B.doc || PW.reader.asset) ? backFromHome() : showHome();
+function backFromHome() { const a = ls.get("atab0", ""); if (a && a.startsWith("pdf:") && tabs.includes(a)) openTab(a); else if (B.doc) { hideHome(); boardTitle(); } else hideHome(); }
+PW.tabs = { close: id => closeTab(id), addPdf: asset => { if (!tabs.includes("pdf:" + asset)) { tabs.push("pdf:" + asset); saveTabs(); } }, draw: () => drawTabs(), has: id => tabs.includes(id), showBoard: () => { PW.reader.hide(); hideHome(true); drawTabs(); boardTitle(); } };
 // ---- home: every board in the workspace, last opened first ----
 let homeK = 0, homeRows = [];
 async function showHome() {
-  B.endEdit(); hideMenus(); homeOn = true; $("home").hidden = false; drawTabs(); $("homeTtl").textContent = "boards — " + (PW.store.name || "");
+  ls.set("atab0", activeTab() || ""); PW.reader.hide(); B.endEdit(); hideMenus(); homeOn = true; $("home").hidden = false; document.body.classList.add("at-home"); drawTabs(); $("homeTtl").textContent = "boards — " + (PW.store.name || "");
   $("ttl").textContent = "pinwand"; document.title = "pinwand";
   const list = await PW.store.listBoards().catch(() => []), rank = f => { const i = B.recent.indexOf(f); return i < 0 ? 1e9 : i; };
-  homeRows = list.sort((a, b) => rank(a.file) - rank(b.file) || b.mod - a.mod); homeK = 0; drawHome(); $("hlist").focus({ preventScroll: true });
+  homeRows = list.sort((a, b) => rank(a.file) - rank(b.file) || b.mod - a.mod); homeK = 0; drawHome(); $("hlist").focus({ preventScroll: true }); PW.reader.drawHome($("plist")); PW.more && PW.more.drawDue($("dlist"));
   for (const r of homeRows) { if (r.due != null) continue; try { const d = r.file === B.file && B.doc ? B.doc : cache.get(r.file) ? cache.get(r.file).doc : await PW.store.readBoard(r.file); const os = (d.objects || []);
       r.n = os.length; r.due = os.filter(o => isStudy(o) && isDue(o)).length; r.cards = os.filter(isStudy).length; drawHome(); } catch (e) { } }
 }
-function hideHome() { if (!homeOn) return; homeOn = false; $("home").hidden = true; drawTabs(); if (B.doc) { $("ttl").textContent = "pinwand — " + (B.doc.name || B.file); document.title = (B.doc.name || "pinwand") + " — pinwand"; } vp.focus(); }
+function hideHome(quiet) { if (!homeOn) return; homeOn = false; $("home").hidden = true; document.body.classList.remove("at-home"); drawTabs(); if (quiet) return; boardTitle(); vp.focus(); }
+PW.hideHome = hideHome; PW.ago = t => ago(t);
 function ago(t) { const d = (Date.now() - t) / 864e5; if (d < 1) return fmtTime(new Date(t)).slice(0, 5); if (d < 2) return "yesterday"; if (d < 7) return Math.floor(d) + " days"; return new Date(t).toLocaleDateString(); }
 function drawHome() {
   const box = $("hlist"); box.innerHTML = ""; if (!homeRows.length) { box.append(h("div", { class: "none", text: "-" })); return; }
@@ -253,19 +332,22 @@ function drawHome() {
     row.onclick = () => openBoard(r.file); box.append(row); });
 }
 $("hlist").addEventListener("keydown", e => { if (!homeRows.length) return; if (e.key === "ArrowDown" || e.key === "ArrowUp") { e.preventDefault(); homeK = (homeK + (e.key === "ArrowDown" ? 1 : -1) + homeRows.length) % homeRows.length; drawHome(); $("hlist").children[homeK].scrollIntoView({ block: "nearest" }); } else if (e.key === "Enter") { e.preventDefault(); openBoard(homeRows[homeK].file); } });
-$("hNew").onclick = () => newBoardDlg(); $("hImport").onclick = () => $("importIn").click(); $("hWs").onclick = () => workspaceDlg(true);
+$("hPdf") && ($("hPdf").onclick = () => PW.reader.pick()); $("hNew").onclick = () => newBoardDlg(); $("hImport").onclick = () => $("importIn").click(); $("hOpen") && ($("hOpen").onclick = () => openFileDlg()); $("hWs").onclick = () => workspaceDlg(true);
 function afterOpen() {
-  if (!tabs.includes(B.file)) { tabs.push(B.file); saveTabs(); } homeOn = false; $("home").hidden = true; PW.look.apply(false); B.renderAll(); PW.map.relayoutAll(false); drawTabs();
+  if (!tabs.includes(B.file)) { tabs.push(B.file); saveTabs(); } PW.reader.hide(); homeOn = false; $("home").hidden = true; document.body.classList.remove("at-home"); PW.look.apply(false); B.renderAll(); PW.map.relayoutAll(false); drawTabs();
   B.recent = [B.file, ...B.recent.filter(r => r !== B.file)].slice(0, 30); ls.set("recent", JSON.stringify(B.recent)); ls.set("board", B.file);
   $("ttl").textContent = "pinwand — " + (B.doc.name || B.file); document.title = (B.doc.name || "pinwand") + " — pinwand"; $("sBoard").textContent = B.doc.name || B.file;
   if (PW.fitImportedFrames && PW.fitImportedFrames()) B.commit();
-  updSave(); PW.study.updDue(); drawMini(); lastBackup = 0;
+  updSave(); PW.study.updDue(); drawMini(); lastBackup = 0; PW.sections && PW.sections.drawOutline();
+  B.readOnly = (+B.doc.app || 0) > PW.APP; if (B.readOnly) alertDlg("a newer board", `“${B.doc.name || B.file}” was last saved by a newer pinwand (version ${B.doc.app}); this copy is version ${PW.APP}.\nTo protect the board, this window does not save it.\nUpdate this copy: press Ctrl+Shift+R, or open pinwand from its address again.`);
+  hello(B.file);
   if (!all().length) status("empty board"); else if (!B.doc.view || B.doc.view.z == null) B.fit(all(), 1, false);
   (launchQ.splice(0)).forEach(f => PW.files.insert(f, B.center()));
 }
 async function createBoard(name, doc) {
   let file = slug(name) + ".pinwand.json", i = 2; while (await PW.store.exists(file)) file = slug(name) + " " + (i++) + ".pinwand.json";
-  doc = doc || newDoc(name); doc.name = name; await PW.store.writeBoard(file, doc); await leaveCurrent(); B.load(doc, file); B.lastSaved = null; afterOpen(); return file;
+  if (i > 2) name = name + " " + (i - 1);
+  doc = doc || newDoc(name); doc.name = name; await PW.store.writeBoard(file, doc); await leaveCurrent(); B.load(doc, file); B.lastSaved = null; B.fileMod = await PW.store.mod(file); afterOpen(); return file;
 }
 async function newBoardDlg() { const n = await promptDlg("new board", "name", ""); if (n && n.trim()) await createBoard(n.trim()); }
 async function renameBoard() { const n = await promptDlg("rename board", "name", B.doc.name || ""); if (!n || !n.trim()) return; B.doc.name = n.trim(); B.touch(); await save(true); afterOpen(); drawTabs(); }
@@ -288,14 +370,33 @@ async function importOldFile(f) {
   } catch (e) { alertDlg("import", "this file could not be imported\n" + (e.message || e)); }
 }
 let saving = null, lastBackup = 0;
+async function changedElsewhere(file, data) { // the file on disk is newer than what this window read or wrote, and its content differs
+  const mod = await PW.store.mod(file); if (!B.fileMod || !mod || mod <= B.fileMod + 1) return false;
+  let other = null; try { other = await PW.store.readBoard(file); } catch (e) { return false; }
+  if (JSON.stringify([other.objects, other.links]) === JSON.stringify([data.objects, data.links])) { B.fileMod = mod; return false; } return other;
+}
+async function saveConflict(data, other) { // keep both: this window continues in a copy, the other version stays where it is
+  const old = B.file, oldName = other.name || B.doc.name || "board", name = (B.doc.name || "board") + " (this window " + fmtTime().slice(0, 5) + ")";
+  let file = slug(name) + ".pinwand.json", i = 2; while (await PW.store.exists(file)) file = slug(name) + " " + (i++) + ".pinwand.json";
+  B.doc.name = name; await PW.store.writeBoard(file, Object.assign({}, data, { name })); B.file = file; B.fileMod = await PW.store.mod(file); B.dirty = false; B.lastSaved = new Date();
+  cache.delete(old); tabs = tabs.map(x => x === old ? file : x); if (!tabs.includes(old)) tabs.push(old); saveTabs(); drawTabs(); boardTitle(); updSave();
+  alertDlg("nothing was overwritten", `“${oldName}” was changed in another pinwand window or on another computer while it was open here.\n\nThis window's version is now saved as “${name}”; the other version stays “${oldName}” (both are in the tabs).\nCompare them and keep what you need.`);
+}
+const saveWarn = h("div", { id: "savewarn", class: "bevel", hidden: true }); document.body.append(saveWarn);
+function showSaveWarn(e) {
+  saveWarn.innerHTML = ""; saveWarn.append(h("b", { text: "not saved: " }), h("span", { text: String(e && e.message || e).slice(0, 140) + " " }),
+    h("button", { class: "b", onclick: async () => { if (PW.store.kind === "folder") await PW.store.reconnect().catch(() => false); await save(true); } }, "try again"));
+  saveWarn.hidden = false;
+}
 async function save(manual) {
-  if (!B.doc || !B.file) return; if (saving) await saving;
+  if (!B.doc || !B.file) return; if (B.readOnly) { status("not saved: this board comes from a newer pinwand"); return; } if (saving) await saving;
   saving = (async () => {
     try {
-      const data = B.serialize(); await PW.store.writeBoard(B.file, data); B.dirty = false;
+      const data = B.serialize(), other = await changedElsewhere(B.file, data); if (other) { await saveConflict(data, other); return; }
+      await PW.store.writeBoard(B.file, data); B.fileMod = await PW.store.mod(B.file); B.dirty = false; saveWarn.hidden = true;
       if (manual || Date.now() - lastBackup > 20 * 60e3) { await PW.store.backup(B.file, data); lastBackup = Date.now(); }
       B.lastSaved = new Date(); updSave(manual);
-    } catch (e) { $("sSave").innerHTML = '<span class="warn">not saved</span>'; status("saving failed: " + (e.message || e)); if (manual) alertDlg("save", "saving failed\n" + (e.message || e)); }
+    } catch (e) { $("sSave").innerHTML = '<span class="warn">not saved</span>'; status("saving failed: " + (e.message || e)); showSaveWarn(e); if (manual) alertDlg("save", "saving failed\n" + (e.message || e)); }
   })();
   await saving; saving = null;
 }
@@ -320,17 +421,73 @@ async function backupsDlg() {
   if (!v) return; if (!(await confirmDlg("restore", "replace the board with this backup?\n(the current state is kept as a backup first)", "restore"))) return;
   await save(true); const doc = await PW.store.readBackup(v); B.load(doc, B.file); B.touch(); await save(true); afterOpen(); toast("backup restored");
 }
-async function exportCopy() {
-  const data = JSON.stringify(B.serialize());
-  try { if (window.showSaveFilePicker) { const fh = await showSaveFilePicker({ suggestedName: slug(B.doc.name) + ".pinwand.json", types: [{ description: "pinwand board", accept: { "application/json": [".json"] } }] }); const w = await fh.createWritable(); await w.write(data); await w.close(); toast("exported"); return; } } catch (e) { if (e.name === "AbortError") return; }
-  const a = h("a", { href: URL.createObjectURL(new Blob([data], { type: "application/json" })), download: slug(B.doc.name) + ".pinwand.json" }); document.body.append(a); a.click(); a.remove();
+// the same board open in two pinwand windows: say so in both
+const WIN = Math.random().toString(36).slice(2), bc = "BroadcastChannel" in window ? new BroadcastChannel("pinwand") : null;
+function hello(file) { if (bc && file) bc.postMessage({ t: "open", file, win: WIN }); }
+if (bc) bc.onmessage = ev => { const m = ev.data || {}; if (m.win === WIN || !B.file || m.file !== B.file) return; if (m.t === "open") bc.postMessage({ t: "also", file: B.file, win: WIN }); toast("“" + (B.doc.name || "this board") + "” is also open in another pinwand window: edit it in one window only", 7000); };
+// ---- save as: a copy under a new name becomes the open board ----
+async function saveAs() {
+  B.endEdit(); const n = await promptDlg("save as", "name", (B.doc.name || "board") + " (copy)"); if (!n || !n.trim()) return;
+  await save(true); const copy = JSON.parse(JSON.stringify(B.serialize())); delete copy.saved; copy.created = Date.now();
+  await createBoard(n.trim(), copy); await save(true); toast("now working in “" + n.trim() + "”");
+}
+// ---- one file that holds the board with its PDFs and pictures: for a USB stick, e-mail, another computer ----
+const blobToData = b => new Promise(r => { const f = new FileReader(); f.onload = () => r(f.result); f.readAsDataURL(b); });
+async function bundle() {
+  const data = B.serialize(), files = new Set(data.objects.map(o => o.asset).filter(Boolean)), assets = {};
+  for (const f of files) { try { assets[f] = await blobToData(await PW.store.getAsset(f)); } catch (e) { } }
+  const marks = {}; for (const f of files) { try { const m = await PW.marks.get(f); if (Object.keys(m.pages).length) marks[f] = m; } catch (e) { } }
+  return JSON.stringify({ format: "pinwand-file", version: 1, name: B.doc.name, board: data, assets, marks });
+}
+async function saveToFile() {
+  B.endEdit(); status("packing…"); let text; try { text = await bundle(); } finally { status(""); }
+  const name = slug(B.doc.name || "board") + ".pinwand";
+  try { if (window.showSaveFilePicker) { const fh = await showSaveFilePicker({ suggestedName: name, types: [{ description: "pinwand board", accept: { "application/x-pinwand": [".pinwand"] } }] }); const w = await fh.createWritable(); await w.write(text); await w.close(); toast("saved to " + fh.name); return; } }
+  catch (e) { if (e.name === "AbortError") return; }
+  const a = h("a", { href: URL.createObjectURL(new Blob([text], { type: "application/json" })), download: name }); document.body.append(a); a.click(); a.remove(); toast("saved to Downloads");
+}
+async function openBoardFile(f) {
+  if (/\.pdf$/i.test(f.name) || /pdf$/i.test(f.type)) return PW.reader.addFile(f);
+  const text = await f.text();
+  if (/\.html?$/i.test(f.name) && !/^\s*[{[]/.test(text)) return importOldFile(f);
+  let d; try { d = JSON.parse(text); } catch (e) { return alertDlg("open", "this is not a pinwand file"); }
+  if (d && d.format === "pinwand-file") {
+    status("unpacking…"); for (const [file, url] of Object.entries(d.assets || {})) { try { const b = await (await fetch(url)).blob(); const a = await PW.store.putAsset(b, file); if (a.file !== file) d.board.objects.forEach(o => { if (o.asset === file) o.asset = a.file; if (o.ref && o.ref.asset === file) o.ref.asset = a.file; }); if (d.marks && d.marks[file]) await PW.marks.put(a.file, d.marks[file]); } catch (e) { } }
+    status(""); await createBoard(d.name || f.name.replace(/\.pinwand$/i, ""), d.board); await save(true); toast("opened " + f.name); return;
+  }
+  if (d && d.format === "pinwand" && Array.isArray(d.objects)) { await createBoard(d.name || f.name.replace(/\.(pinwand\.)?json$/i, ""), d); await save(true); return; }
+  if (d && (d.notes || d.rev)) return importOldFile(f);
+  return alertDlg("open", "this is not a pinwand file");
+}
+async function openFileDlg() {
+  try { if (window.showOpenFilePicker) { const hs = await showOpenFilePicker({ types: [{ description: "pinwand boards", accept: { "application/x-pinwand": [".pinwand"], "application/json": [".json"], "text/html": [".html", ".htm"], "application/pdf": [".pdf"] } }] }); for (const hd of hs) await openBoardFile(await hd.getFile()); return; } }
+  catch (e) { if (e.name === "AbortError") return; }
+  const inp = h("input", { type: "file", accept: ".pinwand,.json,.html,.htm,.pdf", hidden: true }); inp.onchange = async () => { const f = inp.files[0]; inp.remove(); if (f) await openBoardFile(f); }; document.body.append(inp); inp.click();
+}
+PW.openBoardFile = openBoardFile;
+// copy a workspace into another: boards that exist in both are kept twice ("… (copied)"), PDFs and pictures are the same files anyway
+async function copyWorkspace(from, to) {
+  let n = 0; const S = PW.store;
+  async function copyDir(a, b, top) {
+    for await (const [name, hd] of a.entries()) {
+      if (hd.kind === "directory") { if (top && !["assets", "marks", "backups"].includes(name)) continue; await copyDir(hd, await b.getDirectoryHandle(name, { create: true }), false); continue; }
+      if (top && !(name.endsWith(".pinwand.json") || name === "pdfs.json")) continue;
+      let target = name; const exists = async t => { try { await b.getFileHandle(t); return true; } catch (e) { return false; } };
+      if (await exists(target)) { if (!top || name === "pdfs.json" || !name.endsWith(".pinwand.json")) continue; target = name.replace(/\.pinwand\.json$/, "") + " (copied).pinwand.json"; if (await exists(target)) continue; }
+      await S.writeFile(b, target, await hd.getFile()); n++;
+    }
+  }
+  await copyDir(from, to, true); S._cache.clear(); S._urls.clear(); PW.reader.reset(); return n;
 }
 async function workspaceDlg(change) {
   const btns = []; if (PW.store.canPick) btns.push({ label: "choose folder…", value: "pick", def: true }); btns.push({ label: "app storage", value: "opfs" }); if (change) btns.unshift({ label: "cancel", value: null });
   const v = await dialog({ title: "workspace", body: h("pre", { text: change ? `current: ${PW.store.name || "-"}` : "where pinwand keeps your boards" }), buttons: btns });
   if (!v) return false;
+  if (change && B.dirty) await save(false); const oldRoot = PW.store.root, oldName = PW.store.name, oldBoards = oldRoot ? await PW.store.listBoards().catch(() => []) : [];
   try { if (v === "pick") await PW.store.pickFolder(); else await PW.store.useOPFS(); } catch (e) { if (e.name === "AbortError") return false; await alertDlg("workspace", String(e.message || e)); return false; }
-  updSave(); if (change) { cache.clear(); tabs = []; saveTabs(); unloadBoard(); await startBoards(); } return true;
+  if (change && oldRoot && oldBoards.length && !(oldRoot.isSameEntry ? await oldRoot.isSameEntry(PW.store.root).catch(() => false) : oldRoot === PW.store.root) && await confirmDlg("bring everything along?", `Copy the ${oldBoards.length} board${oldBoards.length > 1 ? "s" : ""} with their PDFs, pictures, marks and backups from “${oldName}” to “${PW.store.name}”?\n(Nothing is deleted in “${oldName}”.)`, "copy")) {
+    status("copying…"); const n = await copyWorkspace(oldRoot, PW.store.root).catch(e => { alertDlg("copy", String(e.message || e)); return -1; }); status(""); if (n >= 0) toast(n + " files copied to " + PW.store.name, 5000); }
+  updSave(); if (change) { cache.clear(); tabs = []; saveTabs(); unloadBoard(); PW.reader.reset(); PW.store._cache.clear(); PW.store._urls.clear(); await startBoards(); } return true;
 }
 
 // ============ overview (minimap) ============
@@ -359,6 +516,7 @@ function keysDlg() {
   double-click         new note / edit text
   n d q m f t          note, definition, question, map centre, frame, table
   ctrl+shift+v         add many at once from a list (definitions, questions, notes, arrow chain)
+  while writing        ctrl+b bold, ctrl+i italic, "- " bullet, "- [ ] " tick box (click to tick), enter continues the list
   paste JSON / .html   board items made elsewhere / an HTML block
   i                    insert PDF or picture (or drop / paste it)
   l  alt+click         arrow from the selected item
@@ -369,6 +527,7 @@ function keysDlg() {
   alt+1..7             note colour      ctrl+g       frame around selection
   ctrl+z / ctrl+y      undo / redo      ctrl+d       copy for the palace
   ctrl+s               save             ctrl+o       boards
+  ctrl+shift+s         save as          file menu    save to a file / open a file (.pinwand: board with its PDFs)
   ctrl+k               commands         /  ctrl+f    search
   ctrl+.               hide menus
   ctrl+shift+a         appearance: style, text size, fonts, background
@@ -395,12 +554,33 @@ TABLE
   paste cells          from Excel, Word or markdown: a new table, or fills cells
   drag a column edge   column width     cover   hide a column to test yourself
 
-PDF
-  select text          note / def / question / branch from it
+PDF WINDOW ON THE BOARD (click it first; it then works like pdfgrid)
+  wheel                scroll the pages     ctrl+wheel   zoom the board
+  shift+1…6            columns side by side +  -  0      larger / smaller / fit the columns
+  ← →  pgup pgdn       previous / next page home end     first / last page
+  s / g                one page / all pages enter        open in the reader
+  corner ◢             drag to resize the window
+  select text          note / def / question / branch, or a colour to highlight
   chip on a card       jump to its page; marks on pages jump back
 
+READER (PDF tab)
+  shift+1…6  1…6       columns              +  -  0      zoom / fit
+  s / g                one page / columns   ← → pgup pgdn  pages, home end
+  i                    chapters, pages, marked          n   night
+  / ctrl+f  f3         search, next hit     ctrl+g       go to page
+  ctrl+shift+c         copy the page text   o  w  t      open, close tab, start page
+  ⇆                    the board beside the PDF  [ ]   previous / next tab
+
+DRAWING
+  b  shift+b  e        pen, highlighter, eraser (also on PDF pages)
+  s  x                 shapes (again: next shape), text      esc   back to selecting
+  a stylus             always writes; its eraser end erases
+  line from item to item  becomes a connection that follows both
+
 STUDY
-  r                    review           h            cover definitions
+  r                    review           c            cover definitions
+  h                    heading: new, or selected notes → title → subtitle → normal
+  o                    outline of all headings and frames     pgup / pgdn   previous / next section
   g                    gaps: bold terms and formulas become blanks, click to check
   p                    present frame by frame (arrows, space, esc)
   w                    walk the arrows from here, or recall a map branch
@@ -409,12 +589,16 @@ STUDY
 
 // ============ start ============
 const launchQ = [];
-if ("launchQueue" in window) launchQueue.setConsumer(async p => { if (!p.files || !p.files.length) return; const fs = []; for (const fh of p.files) fs.push(await fh.getFile()); if (B.doc) PW.files.insert(fs, B.center()); else launchQ.push(...fs); });
+if ("launchQueue" in window) launchQueue.setConsumer(async p => { if (!p.files || !p.files.length) return; const fs = []; for (const fh of p.files) { const f = await fh.getFile(); if (/\.pinwand$/i.test(f.name)) { await openBoardFile(f); continue; } if (/\.pdf$/i.test(f.name) || /pdf$/i.test(f.type)) { await waitStore(); await PW.reader.addFile(f); continue; } fs.push(f); } if (!fs.length) return; if (B.doc) PW.files.insert(fs, B.center()); else launchQ.push(...fs); });
+let storeReady; const storeP = new Promise(r => storeReady = r); const waitStore = () => storeP;
+const START_ATAB = ls.get("atab", "");
 async function startBoards() {
-  const last = ls.get("board", ""), list = await PW.store.listBoards(), have = new Set(list.map(b => b.file));
-  tabs = tabs.filter(t => have.has(t)); saveTabs(); drawTabs();
-  if (tabs.length) return openBoard(tabs.includes(last) ? last : tabs[0]);
-  if (last && have.has(last)) return openBoard(last);
+  const last = ls.get("board", ""), atab = START_ATAB, list = await PW.store.listBoards(), have = new Set(list.map(b => b.file));
+  PW.reader.reset(); const pdfs = new Set((await PW.reader.recent()).map(r => "pdf:" + r.asset));
+  tabs = tabs.filter(t => have.has(t) || pdfs.has(t)); saveTabs(); storeReady(); drawTabs();
+  const boards = tabs.filter(t => !t.startsWith("pdf:"));
+  if (boards.length || (last && have.has(last))) { await openBoard(boards.includes(last) ? last : boards[0] || last); if (atab.startsWith("pdf:") && tabs.includes(atab)) await PW.reader.open(atab.slice(4)); return; }
+  if (atab.startsWith("pdf:") && tabs.includes(atab)) return PW.reader.open(atab.slice(4));
   if (window.PW_DEMO && !list.length) { await createBoard("Nonlinear Dynamics (demo)"); PW.pasteJSON(JSON.stringify(window.PW_DEMO), { x: 0, y: 0 }); if (window.PW_DEMO_HTML) await PW.addHTML(window.PW_DEMO_HTML, { x: 1500, y: 820 }, "Saddle-node explorer"); B.sel.clear(); B.updSel(); setTimeout(() => { PW.map.relayoutAll(false); B.fit(all(), 1, false); }, 400); await save(true); return; }
   showHome();
 }
